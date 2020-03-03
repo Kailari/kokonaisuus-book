@@ -164,7 +164,28 @@ With that done, at the very top of the `main.rs`, we add
 
 
 ### Ok, Maths! (for real this time!)
+And here is the anticlimatic maths part. I wanted to quickly showcase what some common operations like `sqrt`, `abs`, `max` and `signum` look like in rust. So here it is, in `apply_friction`, we have
+```rust
+if velocity_length_squared < f64::EPSILON { // We needed the assoc_int_consts for this ":D"
+    continue;
+}
 
+// Note that `.sqrt()` is an associated function of `f64` instead of some utility class like
+// Java's `Math.sqrt()`. A bit unintuitively, the call DOES NOT MODIFY THE ORIGINAL, though.
+let velocity_length = velocity_length_squared.sqrt();
+
+// ...same thing for `.abs()`
+let abs_friction_x = (vel.x / velocity_length * fri.amount).abs();
+let abs_friction_y = (vel.y / velocity_length * fri.amount).abs();
+
+// ...and `.max()`
+let magnitude_x = (vel.x.abs() - abs_friction_x).max(0.0);
+let magnitude_y = (vel.x.abs() - abs_friction_y).max(0.0);
+
+// ...and `.signum()`
+vel.x = vel.x.signum() * magnitude_x;
+vel.y = vel.y.signum() * magnitude_y;
+```
 
 
 ### Blanket implementations (off-topic)
