@@ -67,7 +67,12 @@ pub fn main() {
 
 Here we use the `vec!`-macro to initialize the component "storage vectors" using the array initializer syntax. Note that in our described situations, the velocities are constant and only positions change, thus the positions is defined with `let mut` and velocities with `let`. This means that `positions` is *mutable*, so that its contents are allowed to change and `velocities` is *immutable* so its contents are guaranteed to stay at their initial values *(This causes trying to change any velocity to trigger a compiler error)*. Its useful to differentiate between *mutability* of the data like this for multiple reasons, but we won't go in-depth with that quite yet.
 
-The component initialization itself is done by e.g. `PositionComponent { x: 0.0, y: 0.0 }`. Rust has no concept of constructors apart from the aforementioned struct-construction syntax. Custom constructors are then just associated functions, which *just happen* to produce instances of the type. For instance, we could define *an associated constructor function* for the `PositionComponent` as follows:
+The component initialization itself is done by struct construction syntax like this:
+```rust
+PositionComponent { x: 0.0, y: 0.0 }
+```
+
+Rust has no concept of constructors apart from the aforementioned syntax. Custom constructors are then just associated functions, which *just happen* to produce instances of the type. For instance, we could define *an associated constructor function* for the `PositionComponent` as follows:
 
 ```rust
 impl PositionComponent {
@@ -80,6 +85,9 @@ impl PositionComponent {
 
 However, in this case construction is quite trivial, so we avoid added complexity and use the default syntax instead. We'll add constructors later on, if needed.
 
+
+### Mutating data
+
 Now, we would like to apply the data mutation, or in more general terms, we'd like to apply the velocities to the positions. This is the first draft of a *System* or the *S* in our *ECS*. First things first, what we are trying to do *(pseudocode)*:
 ```
 positions[0] += velocities[0];
@@ -88,7 +96,7 @@ positions[2] += velocities[2];
 positions[3] += velocities[3];
 ```
 
-If we knew we would always have just four entities, this would be fine, but as this does not scale very well, we will need to do better than that. Let's write part of that snippet again, but this time with Rust's iterators:
+If we knew we would always have just four entities, this would be fine, but as this does not scale very well. We are required to do better than that. Let's write that again, but this time with Rust's *iterators*:
 ```rust
 fn main() {
     // ...
@@ -104,9 +112,11 @@ fn main() {
 }
 ```
 
-Okay, so here we create iterators for iterating over the storages, get next element from each iterator and apply the mutation. The `Iterator::next`-method returns an `Option<T>` which is either `Some(value)` or `None`. Call to `Option::unwrap` blindly assumes the value is indeed of the variant `Some` and returns the wrapped value. If `Option` happened to be `None` the method panics and the program crashes.
+Okay, so here we create iterators for iterating over the storages, get next element from each iterator and apply the mutation. The `Iterator::next`-method returns an `Option<T>` which is either `Some(value)` or `None`. Call to `Option::unwrap` blindly assumes the value is indeed of the variant `Some` and returns the wrapped value. However, if the `Option` happened to be `None` the method panics and the program crashes.
 
-On the other hand, the `Iterator::next` returns `None` when it has iterated over the whole collection and there are no more items to iterate over. ...which is exactly what will happen on fifth iteration of that loop, causing the `Option::unwrap` to panic and crash. So this doesn't quite work either.
+On the other hand, the `Iterator::next` returns `None` when it has iterated over the whole collection and there are no more items to iterate over. ...which is exactly what will happen on fifth iteration of that loop, causing the `Option::unwrap` to panic and crash.
+
+Darn, this doesn't quite work either.
 
 We need to somehow break the execution of that loop as soon as either of the iterators returns `None`. For this purpose, we can use *inline pattern matching*, more specifically the `while let` -loop. Let's forget about the mutation part for a bit and look at how we could print the values out, as it is a simpler situation, where we only read positions.
 
