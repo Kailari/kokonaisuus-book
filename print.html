@@ -86,7 +86,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li></ol>
+                <ol class="chapter"><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -558,6 +558,25 @@ impl&lt;S: From&lt;T&gt;, T&gt; Into&lt;T&gt; for S {
 <h2><a class="header" href="#what-next-1" id="what-next-1">What next?</a></h2>
 <p>We got a quite a lot of explanation from very little code changes, but hopefully that's a good sign. Next we should start moving things to new files as our <code>main.rs</code> is getting quite cluttered.</p>
 <p>The full source code can be found in branch <code>part-1</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-1">link</a>).</p>
+<h1><a class="header" href="#spring-cleaning" id="spring-cleaning">Spring cleaning</a></h1>
+<p><em>&quot;Breaking things down and moving them into modules&quot;</em></p>
+<h3><a class="header" href="#topics-2" id="topics-2">Topics</a></h3>
+<ul>
+<li>Modules</li>
+<li>Associated functions and struct methods</li>
+<li><code>trait Add</code></li>
+<li><code>trait Mul</code></li>
+<li><code>trait AddAssign</code></li>
+<li>Deriving <code>Copy</code> and <code>Clone</code></li>
+<li><code>trait Display</code></li>
+</ul>
+<h2><a class="header" href="#what-are-we-trying-to-do-2" id="what-are-we-trying-to-do-2">What are we trying to do?</a></h2>
+<p>Our <code>main.rs</code> has turned into an ugly mess with everything residing in a single file. We would like to move things around a bit and make things tidier by moving everything to their own modules. Additionally, I got a bit carried away with maths stuff and ended up writing a simple <code>Vector2d</code> implementation we can use to simplify system logic.</p>
+<h2><a class="header" href="#todo-title" id="todo-title">TODO: TITLE</a></h2>
+<p>TODO</p>
+<h2><a class="header" href="#what-next-2" id="what-next-2">What next?</a></h2>
+<p>TODO</p>
+<p>The full source code can be found in branch <code>part-2</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-2">link</a>).</p>
 
                     </main>
 
