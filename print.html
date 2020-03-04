@@ -395,8 +395,8 @@ FrictionComponent::from(1.0);
 <span class="boring">}
 </span></code></pre></pre>
 <p>...yeah. Not much of an improvement; but it gave us an excuse to talk about traits so I count that as a win!</p>
-<p>So, the traits in essence are just something we can implement on structs to provide them with some well-defined behavior. In this case we implemented the trait which allowed conversion into our types from other types. Later on, we are going to use traits to define <code>System</code> with <code>tick</code>-method which then allows us to handle all systems equally from a <code>SystemDispatcher</code>.</p>
-<p>Let's not get ahead of ourselves! What we have here, is overly complex way of initializing components, but we are keeping it because I'm an idiot!</p>
+<p>So, we saw that traits in essence are just something we can implement on structs to provide them with some well-defined behavior. In this case we implemented the trait which allowed conversion into our types from other types. Later on, we are going to use traits to define <code>System</code> with <code>tick</code>-method which then allows us to handle all systems equally from a <code>SystemDispatcher</code>. <em>This description is a daring oversimplification of what traits are, but hopefully it helps you get the basic idea.</em></p>
+<p>Let's not get ahead of ourselves! What we have here, is overly complex way of initializing components, but we are keeping it because I'm an idiot! Now, what shall we do with our new components?</p>
 <h3><a class="header" href="#applying-velocity-in-a-function" id="applying-velocity-in-a-function">Applying velocity in a function</a></h3>
 <p>Next up, moving logic to functions and figuring out what we need to change for making that work.</p>
 <p>Let's throw ourselves straight into the deep end and look at what the function <code>apply_velocity</code> looks like:</p>
@@ -415,12 +415,46 @@ FrictionComponent::from(1.0);
 <span class="boring">}
 </span></code></pre></pre>
 <p>There are the iterators and the <code>while let</code>-loop from the last time. But what's up with the parameters? Why are the <code>&amp;</code>-symbols in there? This is due to ownership rules <em>(Rust book, chapter 4.)</em>. If we would just pass the component vectors as-is, their ownership would move into the function, and the vectors would ultimately be dropped when the function ends.</p>
-<p>Obviously, this is not what we want, rather we would like to say</p>
+<p>Obviously, this is not what we want, rather when we call the function, we would like to say</p>
 <blockquote>
-<p><em>&quot;hey, here is this thing I own. You are allowed to do something with it, but I want it back when you are done with it, OK?&quot;</em></p>
+<p><em>&quot;Hey, here is this thing I own. You are allowed to do something with it, but I want it back when you are done with it, OK?&quot;</em></p>
 </blockquote>
-<p>This is achieved using <em>references</em>. The parameter declaration <code>positions: &amp;mut Vec&lt;VelocityComponent&gt;</code> tells us that <code>position</code> is a reference to a component storage vector containing velocities, and that we are allowed to mutate those. The velocities on the other hand is an <em>immutable reference</em>, which allows us to read values from the components from the vector, but not mutate them. (<code>&amp;mut</code> vs. just <code>&amp;</code>, both are references, but adding the <code>mut</code> permits mutation)</p>
+<p>This can be achieved using <em>references</em>. The parameter declaration <code>positions: &amp;mut Vec&lt;VelocityComponent&gt;</code> tells us that <code>position</code> is a reference to a component storage vector containing velocities, and that we are allowed to mutate those. The <code>velocities</code>-parameter on the other hand is an <em>immutable reference</em>, which allows us to read the components from the vector, but not mutate them. (<code>&amp;mut</code> vs. just <code>&amp;</code>, both are references, but adding the <code>mut</code> permits mutation)</p>
 <p>Passing the vectors as references has the effect of <em>borrowing</em> the ownership of those vectors to the function for its <em>lifetime</em>. When the function ends, the lifetime of the function, with its parameters, ends. At this point the references received as parameters are dropped, ending the borrow, causing the ownership to return to the caller.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>fn apply_velocity(params: &amp;SomeType)
+{ // Lifetime of the function starts
+
+    // params is alive and usable, as here parameters share the lifetime of the function
+
+} // Function lifetime ends
+<span class="boring">}
+</span></code></pre></pre>
+<p>Above is actually sugared version of the function. It is self-evident from the context that the reference and the function have the same lifetime, but in some cases that might not be the case <em>(Now this goes a bit out of scope for this part)</em>. The full, de-sugared form of the above function would be</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>fn apply_velocity&lt;'a&gt;(params: &amp;'a SomeType)
+{ // Lifetime of the function ('a) starts
+
+    // params is alive and usable as 'a has not ended yet
+
+} // Function lifetime ('a) ends
+<span class="boring">}
+</span></code></pre></pre>
+<p>The odd looking <code>'a</code> here is a <em>lifetime annotation</em>. As I said earlier, when the function and its reference parameters have the same lifetime, that is the self-evident common case and the annotations can be <em>elided</em> <em>(left out)</em>. After <em>elision of the lifetime annotations</em>, we get the &quot;sugered&quot; version.</p>
+<p>Again, now that we have taken a peek at what lifetimes and references are, a short TL;DR:</p>
+<ul>
+<li>Lifetime of something is the time from when it is allocated to when it goes out of scope</li>
+<li>Function calls have lifetimes from start of the call until the function returns</li>
+<li>Passing a value to a function <em>moves</em> that value with its ownership, preventing us from using it after that point <em>(unless the function returns it back to us)</em></li>
+<li>When lifetime of <em>a value</em> ends, it is dropped <em>(its memory is freed)</em></li>
+<li>Passing a reference to a function <em>borrows</em> the data in question to the function, for the lifetime of the reference.</li>
+<li>When lifetime of <em>a reference</em> ends, only the reference is dropped, the borrow ends and the caller is again allowed to use the value normally.</li>
+</ul>
+<p>Hopefully that starts to make sense. Understanding what lifetimes are and how they relate to borrowing and moving ownership around is critical when working with Rust.</p>
 <p>So, we learned that <em>passing parameters as references has the effect of borrowing them instead of moving the ownership, allowing us to continue using them in the caller (pass them to multiple systems).</em> In this case, this is exactly what we wanted. On the other hand, in the case of the <code>From</code>-trait, the <code>from</code>-method takes the parameter by value, thus consuming the ownership. As the trait method does not return the value, the value is dropped after the call <em>(which is the desired behavior in that specific case)</em>.</p>
 <h3><a class="header" href="#calling-the-system-functions" id="calling-the-system-functions">Calling the system functions</a></h3>
 <p>Calling the systems is now quite trivial, but let's have a look what borrowing looks for the &quot;giving&quot; side:</p>
@@ -438,6 +472,7 @@ apply_velocity(&amp;mut positions, &amp;velocities);
 print_positions(&amp;positions)
 <span class="boring">}
 </span></code></pre></pre>
+<p>Here, we must explicitly tell the compiler that we aknowledge that the values are being passed as references. Additionally, we need to define the mutability of those references. Prefixing the variable name with the <code>&amp;</code> turns it into a reference. Further adding the <code>mut</code> modifier turns the <em>(immutable) reference</em> into a <em>mutable reference</em>. We can only borrow as mutable if the value we are trying to borrow is mutable.</p>
 <h3><a class="header" href="#maths-err-darn-it" id="maths-err-darn-it">Maths! ...err, darn it.</a></h3>
 <p>I really hate comparing floating point numbers against zero or some arbitrary <code>0.0001</code>. For this purpose, we are going to need <em>epsilon</em> which we ca... Oh.</p>
 <p>As of writing, use of some associated numeric constants for number types is an <em>unstable feature</em>. These are language features that are still under development, and more or less subject to change. In this case, the required feature <em>(<code>assoc_int_const</code>)</em> has passed the review process and is due to <em>&quot;be merged soon&quot;</em>, but for now, it is unstable.</p>
