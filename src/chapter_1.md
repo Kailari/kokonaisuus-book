@@ -90,10 +90,10 @@ FrictionComponent::from(1.0);
 
 ...yeah. Not much of an improvement; but it gave us an excuse to talk about traits so I count that as a win!
 
-So, the traits in essence are just something we can implement on structs to provide them with some well-defined behavior. In this case we implemented the trait which allowed conversion into our types from other types. Later on, we are going to use traits to define `System` with `tick`-method which then allows us to handle all systems equally from a `SystemDispatcher`.
+So, we saw that traits in essence are just something we can implement on structs to provide them with some well-defined behavior. In this case we implemented the trait which allowed conversion into our types from other types. Later on, we are going to use traits to define `System` with `tick`-method which then allows us to handle all systems equally from a `SystemDispatcher`. *This description is a daring oversimplification of what traits are, but hopefully it helps you get the basic idea.*
 
 
-Let's not get ahead of ourselves! What we have here, is overly complex way of initializing components, but we are keeping it because I'm an idiot!
+Let's not get ahead of ourselves! What we have here, is overly complex way of initializing components, but we are keeping it because I'm an idiot! Now, what shall we do with our new components?
 
 
 ### Applying velocity in a function
@@ -115,13 +115,44 @@ fn apply_velocity(positions: &mut Vec<PositionComponent>, velocities: &Vec<Veloc
 
 There are the iterators and the `while let`-loop from the last time. But what's up with the parameters? Why are the `&`-symbols in there? This is due to ownership rules *(Rust book, chapter 4.)*. If we would just pass the component vectors as-is, their ownership would move into the function, and the vectors would ultimately be dropped when the function ends.
 
-Obviously, this is not what we want, rather we would like to say
+Obviously, this is not what we want, rather when we call the function, we would like to say
 
-> *"hey, here is this thing I own. You are allowed to do something with it, but I want it back when you are done with it, OK?"*
+> *"Hey, here is this thing I own. You are allowed to do something with it, but I want it back when you are done with it, OK?"*
 
-This is achieved using *references*. The parameter declaration `positions: &mut Vec<VelocityComponent>` tells us that `position` is a reference to a component storage vector containing velocities, and that we are allowed to mutate those. The velocities on the other hand is an *immutable reference*, which allows us to read values from the components from the vector, but not mutate them. (`&mut` vs. just `&`, both are references, but adding the `mut` permits mutation)
+This can be achieved using *references*. The parameter declaration `positions: &mut Vec<VelocityComponent>` tells us that `position` is a reference to a component storage vector containing velocities, and that we are allowed to mutate those. The `velocities`-parameter on the other hand is an *immutable reference*, which allows us to read the components from the vector, but not mutate them. (`&mut` vs. just `&`, both are references, but adding the `mut` permits mutation)
 
 Passing the vectors as references has the effect of *borrowing* the ownership of those vectors to the function for its *lifetime*. When the function ends, the lifetime of the function, with its parameters, ends. At this point the references received as parameters are dropped, ending the borrow, causing the ownership to return to the caller.
+
+```rust
+fn apply_velocity(params: &SomeType)
+{ // Lifetime of the function starts
+
+    // params is alive and usable, as here parameters share the lifetime of the function
+
+} // Function lifetime ends
+```
+
+Above is actually sugared version of the function. It is self-evident from the context that the reference and the function have the same lifetime, but in some cases that might not be the case *(Now this goes a bit out of scope for this part)*. The full, de-sugared form of the above function would be
+```rust
+fn apply_velocity<'a>(params: &'a SomeType)
+{ // Lifetime of the function ('a) starts
+
+    // params is alive and usable as 'a has not ended yet
+
+} // Function lifetime ('a) ends
+```
+
+The odd looking `'a` here is a *lifetime annotation*. As I said earlier, when the function and its reference parameters have the same lifetime, that is the self-evident common case and the annotations can be *elided* *(left out)*. After *elision of the lifetime annotations*, we get the "sugered" version.
+
+Again, now that we have taken a peek at what lifetimes and references are, a short TL;DR:
+ - Lifetime of something is the time from when it is allocated to when it goes out of scope
+ - Function calls have lifetimes from start of the call until the function returns
+ - Passing a value to a function *moves* that value with its ownership, preventing us from using it after that point *(unless the function returns it back to us)*
+ - When lifetime of *a value* ends, it is dropped *(its memory is freed)*
+ - Passing a reference to a function *borrows* the data in question to the function, for the lifetime of the reference.
+ - When lifetime of *a reference* ends, only the reference is dropped, the borrow ends and the caller is again allowed to use the value normally.
+
+Hopefully that starts to make sense. Understanding what lifetimes are and how they relate to borrowing and moving ownership around is critical when working with Rust.
 
 So, we learned that *passing parameters as references has the effect of borrowing them instead of moving the ownership, allowing us to continue using them in the caller (pass them to multiple systems).* In this case, this is exactly what we wanted. On the other hand, in the case of the `From`-trait, the `from`-method takes the parameter by value, thus consuming the ownership. As the trait method does not return the value, the value is dropped after the call *(which is the desired behavior in that specific case)*.
 
@@ -138,6 +169,8 @@ apply_velocity(&mut positions, &velocities);
 
 print_positions(&positions)
 ```
+
+Here, we must explicitly tell the compiler that we aknowledge that the values are being passed as references. Additionally, we need to define the mutability of those references. Prefixing the variable name with the `&` turns it into a reference. Further adding the `mut` modifier turns the *(immutable) reference* into a *mutable reference*. We can only borrow as mutable if the value we are trying to borrow is mutable.
 
 
 ### Maths! ...err, darn it.
