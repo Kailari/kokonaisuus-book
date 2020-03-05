@@ -168,7 +168,7 @@ impl<'a> IteratorTuple for (IterMut<'a, PositionComponent>, Iter<'a, VelocityCom
     }
 }
 ```
-Looking familiar? This is the exact same thing we tried to implement using `Iterator`, but this time we use our own `IteratorTuple` trait so this is valid. `apply_velocity` should now compile again!
+Looking familiar? This is the exact same thing we tried to implement using `Iterator`, but this time we use our own `IteratorTuple` trait so this is valid, even though *the type we implement the trait on is actually **external**! (defined elsewhere by someone else)* Now, `apply_velocity` should pass the compiler again!
 
 Also, note that the local variables for the iterators need not be mutable at all, as we do not mutate them before passing them to `IterTuple::from`. That is **we** do not mutate them, but as we pass the ownership down to `IterTuple`, we don't actually care what they do with it as *`IterTuple` now owns the iterators, thus it can anyway do whatever it wants with them*. In other words, when passing by value *(when moving the ownership)* mutability can "change".
 
