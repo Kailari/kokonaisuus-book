@@ -84,7 +84,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html" class="active"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li></ol>
+                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html" class="active"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -164,11 +164,483 @@
 <li><code>trait Display</code></li>
 </ul>
 <h2><a class="header" href="#what-are-we-trying-to-do" id="what-are-we-trying-to-do">What are we trying to do?</a></h2>
-<p>Our <code>main.rs</code> has turned into an ugly mess with everything residing in a single file. We would like to move things around a bit and make things tidier by moving everything to their own modules. Additionally, I got a bit carried away with maths stuff and ended up writing a simple <code>Vector2d</code> implementation we can use to simplify system logic.</p>
-<h2><a class="header" href="#todo-title" id="todo-title">TODO: TITLE</a></h2>
-<p>TODO</p>
+<p>Our <code>main.rs</code> has turned into an ugly mess with everything residing in a single file. We should move things around a bit and make things tidier by extracting everything  to their own modules. Additionally, I got a bit carried away with maths stuff and ended up writing a simple <code>Vector2d</code> implementation we can use to simplify system logic.</p>
+<h2><a class="header" href="#crates-and-modules" id="crates-and-modules">Crates and Modules</a></h2>
+<p>In Rust, a single project, application binary or library is called a <em>&quot;crate&quot;</em>. For example, this project, <em>&quot;kokonaisuus&quot;</em> is a single binary <em>(application)</em> crate. As this is a binary crate, we have a <code>src/main.rs</code> which contains the <em>main entry point</em> for our application.</p>
+<p>So, we have <em>crates</em> which then consist of one or more <em>modules</em>. Currently, we have only one module <code>main</code>. What we would like to do next, is to split our current main-module into multiple <em>submodules</em>.</p>
+<p>Declaring new modules always happens at the <em>module root</em>. In this case, we have only the <em>main</em> module. Let's say, we would like to create a module for all of our systems. At the top of the <code>main.rs</code> we add</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>mod systems;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, the compiler starts the compilation process from the <code>main.rs</code>. Next, it sees the module declaration and searches for <em>module root</em> of the <code>systems</code> module from two paths:</p>
+<ol>
+<li><code>src/systems.rs</code></li>
+<li><code>src/systems/mod.rs</code></li>
+</ol>
+<p>These two are mutually exclusive, we must pick one of them <em>(adding both files would mean that we have two modules with the same name!)</em>. Here, <code>mod.rs</code> is special file name, a bit like <code>main.rs</code> is. It is specifically used to declare the module root in situations where module is declared as a separate directory. There are notable differences between these two:</p>
+<ol>
+<li>In first case, whole <code>systems</code> module hierarchy needs to be defined in a single file. Typically this means that <code>systems</code> does not have any submodules and is rather simple on its own.</li>
+<li>Second case, all other files <em>(including directories)</em> in <code>src/systems/</code> directory can be treated as submodules of <code>systems</code> by adding <code>mod &lt;module name&gt;;</code> to <code>src/systems/mod.rs</code></li>
+</ol>
+<p>We use modules like 1. for simple, self-contained things, like <code>vector.rs</code>. Variant 2. is more suitable for <code>systems</code> in this case, as we can then declare all our actual systems as submodules of the <code>systems</code> module, keeping them all in a single file. Thus, our file structure is something like</p>
+<pre><code>src/
+|--/main.rs
+|--/vector.rs
+|--/systems/
+|   |------/mod.rs
+|   |------/apply_velocity.rs
+|   |------/apply_friction.rs
+|   |------/...
+|--/components/
+    |---------/mod.rs
+    |---------/...
+</code></pre>
+<p>Now, in <code>src/main.rs</code> we define</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub mod vector;
+pub mod systems;
+pub mod components;
+<span class="boring">}
+</span></code></pre></pre>
+<p>similarly in the <code>src/systems/mod.rs</code> we add</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub mod apply_velocity;
+pub mod apply_friction;
+// ... the rest of the systems
+<span class="boring">}
+</span></code></pre></pre>
+<p>...and so on. After this, each file represents their own modules. The <code>pub</code> keyword means that the submodules should be visible to the outside modules. This allows accessing things like <code>systems::apply_friction::something_defined_in_apply_friction</code>. Additionally, to make functions, structs and traits visible, we need to add the <code>pub</code> keyword to their definitions, too. For example, the <code>apply_velocity</code> module then has</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub fn apply_velocity(/* snip */) { /* snap */ }
+^^^ This here
+<span class="boring">}
+</span></code></pre></pre>
+<p>From here, we perform a trivial cut-and-paste and move our systems and components to their own files. Also, we must add <code>pub</code> to everything we want to be visible to other modules. After this, however, we have a ton compilation errors as the components are defined in separate modules and the systems can no longer find them!</p>
+<p>Now, to fix this, how can we use something from, say, <code>systems/apply_velocity</code> in our <code>main.rs</code>?</p>
+<h3><a class="header" href="#including-modules-from-our-own-crate" id="including-modules-from-our-own-crate">Including modules from our own crate</a></h3>
+<p>Importing dependencies happens using the <code>use</code>-keyword. In this case, we are referring to modules in our own crate, thus to import the <code>fn apply_velocity(...)</code> to the <code>main.rs</code>, we can add the line</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>use crate::systems::apply_velocity::apply_velocity;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Here, we import the function with name <code>apply_velocity</code> from the module <code>systems/apply_velocity</code>. Additionally, as we refer to our own crate, we add the <code>crate::</code> to the beginning. There is still room for improvement, as the name <code>apply_velocity</code> repeats, making the line a bit ugly to look at. Also, after we add more imports, we start to see a pattern here:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>use crate::systems::apply_velocity::apply_velocity;
+use crate::systems::apply_friction::apply_friction;
+use crate::systems::apply_acceleration::apply_acceleration;
+use crate::systems::print_positions::print_positions;
+<span class="boring">}
+</span></code></pre></pre>
+<p>All these have the <code>crate::systems</code> at the beginning. Thus, we can write this alternatively as:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>use crate::systems::{
+    apply_velocity::apply_velocity,
+    apply_friction::apply_friction,
+    apply_acceleration::apply_acceleration,
+    print_positions::print_positions,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, what about the repeats? Here, one thing to note here is that we actually only ever export one thing from each of our system modules. Wouldn't it be neat if we could import them directly from the <code>systems</code> module, without needing to refer to them using the <code>systems::&lt;system_name&gt;</code>?</p>
+<p>Re-exporting to the rescue! We can <em>re-export</em> the system functions from the <code>systems</code> module to remove the repetition. First, remove the <code>pub</code> keywords from system modules:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>mod apply_velocity;
+mod apply_friction;
+mod apply_acceleration;
+mod print_positions;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, no-one can again refer to those modules as they are private. To make them visible, re-export them using <code>pub use</code>, like this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub use self::apply_velocity::apply_velocity;
+pub use self::apply_friction::apply_friction;
+pub use self::apply_acceleration::apply_acceleration;
+pub use self::print_positions::print_positions;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Here, <code>self::</code> means that we start traversing the module paths starting from the current module. <em>(We could also write <code>crate::systems::</code>, but <code>self::</code> is shorter)</em>. By re-exporting we have made the exported functions seem like they originate from the <code>systems</code>-module, instead of the submodules. Now, in <code>main.rs</code>, we can re-write the system imports as:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>use crate::systems::{apply_velocity, print_positions, apply_friction, apply_acceleration};
+<span class="boring">}
+</span></code></pre></pre>
+<p>which according to my personal subjective opinion, is a lot cleaner than the original. We have hidden the actual, more complex, internal module structure by re-exporting the contents of the internal modules from a common root-module. This allows us to keep the imports more readable, neat!</p>
+<p>Additionally, we re-export the components from <code>components/mod.rs</code>, too:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>mod position; // Note: no &quot;pub&quot; modifier
+mod velocity;
+mod friction;
+mod acceleration;
+
+pub use self::{
+    position::PositionComponent,
+    velocity::VelocityComponent,
+    friction::FrictionComponent,
+    acceleration::AccelerationComponent,
+};
+<span class="boring">}
+</span></code></pre></pre>
+<p>As <code>crate::</code> always allows us to refer to crate-local modules using absolute paths, the same principle can be used to import systems and components elsewhere in our codebase.</p>
+<h3><a class="header" href="#formatting-print-output-on-per-type-basis" id="formatting-print-output-on-per-type-basis">Formatting print output on per-type basis</a></h3>
+<p>Currently, our <code>print_positions</code> formats the print output with this spell:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>println!(&quot;Position: ({},{})&quot;, pos.x, pos.y)
+<span class="boring">}
+</span></code></pre></pre>
+<p>Here, the <code>{}</code> will be substituted with a parameter, resulting in coordinates like</p>
+<pre><code>Position: (12.34567980123, 23.126356789)
+</code></pre>
+<p>We would like to get similar output with just <em>(this is the actual code we end up using in <code>print_positions</code>)</em></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>println!(&quot;Position: {}&quot;, pos)
+<span class="boring">}
+</span></code></pre></pre>
+<p>In Java, we would just override the <code>toString</code>-method and be done with it. But is there a <code>toString</code>-counterpart in Rust?</p>
+<p>Obviously, there is. Rust has a <code>ToString</code> trait, but that rarely needs to be directly implemented. Instead, we implement the <code>Display</code> trait, which is actually meant for producing printable output from our types. As a bonus, just implementing the <code>Display</code> automagically implements the <code>ToString</code>, through a standard blanket implementation.</p>
+<p>Implementing <code>Display</code> is quite straightforward, the only oddity is that we need to use the <code>write!</code>-macro, but apart from odd syntax this does not complicate things too much</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl Display for PositionComponent {
+    fn fmt(&amp;self, f: &amp;mut Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        write!(f, &quot;Pos[value: {}]&quot;, self.value)
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Here, we just use the same string formattign syntax as with <code>println!</code> to nicely lay out what we are trying to print. Also, now that the <code>PositionComponent::value</code> is actually a <code>Vector2d</code> we can rely on its <code>Display</code> implementation <em>(which we have to write ourselves)</em>.</p>
+<h3><a class="header" href="#2d-vector-math" id="2d-vector-math">2D Vector (Math)!</a></h3>
+<p>As we are for the foreseeable future dealing with two dimensional coordinates, I decided to add a simple struct for helping with 2d vector math.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub struct Vector2d {
+    pub x: f64,
+    pub y: f64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, we could leave the definition as-is and be happy with it. The thing is, though, that we are for most of time going to use vector instances as values very much like primitive types <em>(<code>i32</code>, <code>f64</code>, etc.)</em>. Wouldn't it be quite nice if <code>Vector2d</code> would actually behave the same way, in situations like, say <em>(from rust book, chapter 4.2, &quot;Stack-only data: Copy&quot;)</em>:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let x = 5;
+let y = x;
+
+println!(&quot;x = {}, y = {}&quot;, x, y);
+<span class="boring">}
+</span></code></pre></pre>
+<p>This would normally contradict ownershiprules, as <code>x</code> is being used while its value seems to have already moved to <code>y</code>. What happens here is that primitive types implement a special so-called <code>Copy</code>-trait which allows creating implicit value copies in situations like these. So, in above example, because <code>i32</code> has the <code>Copy</code>-trait, the assinment <code>y = x</code> does not move the value of <code>x</code> to the <code>y</code> but rather creates a copy of it.</p>
+<p>Another special thing about the <code>Copy</code> trait is that it cannot be written manually. Copying is a standard language procedure, which in all cases is a full bit-by-bit copy of the original. If more special logic when creating copies is required, <code>Clone</code>-trait can be used to implement a <code>.clone()</code>-method. Then again, in simple cases, <code>Clone</code> implementation is trivial for anything implementing the <code>Copy</code> trait.</p>
+<p>But if we cannot manually implement copy, then how are we supposed to make our <code>Vector2d</code> copyable? Here we utilize the convenient fact that <code>Copy</code> and <code>Clone</code> are <em>derivable traits</em>. Deriving traits means that their implementation is more-or-less trivial, and can easily be generated from the struct definition itself and/or other traits implemented on the struct. In this case, as we want both of the discussed traits, we add a derive annotation on our struct</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>#[derive(Copy, Clone)]
+pub struct Vector2d {
+    pub x: f64,
+    pub y: f64,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, our <code>Vector2d</code> is copyable, making its use in calculation context much more convenient as we do not need worry about accidentally moving it when assigning it to a temporary value!</p>
+<p>Speking of using it in calculations, next we would like to implement common operations like vector summation <em>(the &quot;<code>+</code>&quot;-operator)</em>, scalar multiplication <em>(&quot;<code>*</code>&quot;-operator with <code>f64</code> RHS)</em> and for convenience, the &quot;<code>+=</code>&quot;-operator.</p>
+<p>Standard library provides traits for all of these. First, the summation of two vectors. This allows the use of the &quot;<code>+</code>&quot;-operator</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let a = Vector2d { x: 1, y: 2 };
+let b = Vector2d { x: 3, y: 4 };
+
+// Before:
+let c = Vector2d { x: 0, y: 0 };
+c.x = a.x + b.x;
+c.y = a.y + b.y;
+
+// After:
+let c = a + b;
+<span class="boring">}
+</span></code></pre></pre>
+<p>This is achieved using the <code>Add</code> trait. Implementation is straightworward:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl Add for Vector2d {
+    type Output = Vector2d;
+
+    fn add(self, rhs: Self) -&gt; Self::Output {
+        Vector2d {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The trait has one associated type, which is used to declare what type of output is expected from the operator. In this case we expect the summation of two vectors to produce, unsurpisingly, an another vector.</p>
+<p>Next up, the <code>Mul</code> trait, to allow scalar multiplication</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let a = Vector2d { x: 1, y: 1 };
+let scalar = 10.0;
+
+// Before:
+let b = Vector2d { x: 0, y: 0 };
+b.x = a.x * scalar;
+b.y = a.y * scalar;
+
+// After:
+let b = a * scalar;
+<span class="boring">}
+</span></code></pre></pre>
+<p>And the implementation</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl Mul&lt;f64&gt; for Vector2d {
+    type Output = Vector2d;
+
+    fn mul(self, rhs: f64) -&gt; Self::Output {
+        Vector2d {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>There is actually an interesting thing to note here. We do not necessarily need to provide the type parameter to <code>Mul</code> is actually optional and defaults to <code>Self</code>. This can be seen from the definition of <code>Mul</code></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub trait Mul&lt;Rhs = Self&gt; {
+    /* snip */
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>So, in cases where <code>Rhs</code> is not provided, it defaults to <code>Self</code>, which would in this case be <code>Vector2d</code>. We do not want that, so we provide it manually as <code>f64</code>. Now, if one was curious enough to peek at the definition of <code>Add</code>, there is a similar situation going on in there. As we implemented the addition of two vectors, the default <code>Self</code> was sufficient. For example, we could additionally write</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl Add&lt;(f64, f64)&gt; for Vector2d {
+    /* snip */
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>which would be perfectly legitimate as <code>Add&lt;Vector2d&gt;</code> and <code>Add&lt;(f64,f64)&gt;</code> do not conflict!</p>
+<p>The last one is something I actually didn't implement, but could be nice addition, at it could allow initializing temporary vectors inline, as 2-tuples. This would then result in something like</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let a = Vector2d { x: 0, y: 0 };
+let b = a + (10.0, 10.0);
+<span class="boring">}
+</span></code></pre></pre>
+<p>but I'm not quite sure if that is just plain confusing or is it actually useful.</p>
+<p>Implementing the <code>Sub</code> trait is very similar to the <code>Add</code> implementation.</p>
+<p>Last trait we are implementing for now is the <code>AddAssign</code>, which enables use of the &quot;<code>+=</code>&quot; operator. This is a bit different from the other operators as this actually mutates the LHS. This is visible from the function signature as we take <code>&amp;mut self</code> in instead of just <code>self</code>. Apart from that, there is nothing special here. <em>(Again, the RHS is an optional type parameter which we omit here, causing it to use the default value <code>Self</code>)</em></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl AddAssign for Vector2d{
+    fn add_assign(&amp;mut self, rhs: Self) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><em>Fun fact: the implementations of operator traits for most of the situations in numeric types are basically the same, to the point where the standard library uses macros to generate them. For example, for <code>AddAssign</code> there is this one-liner</em></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>add_assign_impl! { usize u8 u16 u32 u64 u128 isize i8 i16 i32 i64 i128 f32 f64 }
+<span class="boring">}
+</span></code></pre></pre>
+<p><em>which then leverages a single &quot;generic&quot; implementation of the trait and just substitutes the types where required</em>..</p>
+<p>Actually, that was the last <em>operator</em>-trait we are going to implement. We still need to implement the <code>Display</code>-trait, remember? Luckily, it is quite trivial:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl Display for Vector2d {
+    fn fmt(&amp;self, f: &amp;mut Formatter&lt;'_&gt;) -&gt; std::fmt::Result {
+        write!(f, &quot;({:.3}, {:.3})&quot;, self.x, self.y)
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We use the pattern <code>{:.3}</code> to tell the formatter that we want the <code>x</code> and the <code>y</code> limited to the precision of three decimal digits.</p>
+<p>Now, let's put our vector to use. We change all components with <code>x</code> and <code>y</code> to use <code>value: Vector2d</code> instead.</p>
+<p>Previously, in <code>apply_acceleration</code> we had</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>vel.x += acc.x;
+vel.y += acc.y;
+<span class="boring">}
+</span></code></pre></pre>
+<p>As we implemented the <code>AddAssign</code>-trait and changed the components to use vectors, we can replace this with just</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>vel.value += acc.value;
+<span class="boring">}
+</span></code></pre></pre>
+<p>The same goes for <code>apply_velocity</code>.</p>
+<p>There is much more going on in <code>apply_friction</code>, however. Let's see.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let velocity_length_squared = vel.x * vel.x + vel.y * vel.y;
+
+if velocity_length_squared &lt; f64::EPSILON {
+    continue;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>How about no. Let's simplify this by adding a method for our vector type. We can add our own methods directly to struct without specifying a trait like this</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl Vector2d {
+    // methods here
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Let's add a convenience method for calculating (squared) vector length. Inside the <code>impl</code>-block declared above, we add</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub fn length(&amp;self) -&gt; f64 {
+    self.length_squared().sqrt()
+}
+
+pub fn length_squared(&amp;self) -&gt; f64 {
+    self.x * self.x + self.y * self.y
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p><em>When length is defined as the square root of the squared length, I just love how trivial it is to implement :)</em></p>
+<p>Now, our length-zero-check can be written as:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>if vel.value.length_squared() &lt; f64::EPSILON {
+    continue;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>How about this:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let velocity_length = velocity_length_squared.sqrt();
+let abs_friction_x = (vel.x / velocity_length * fri.amount).abs();
+let abs_friction_y = (vel.y / velocity_length * fri.amount).abs();
+<span class="boring">}
+</span></code></pre></pre>
+<p>We are calculating a new vector here. The <code>friction</code> is the amount of friction to apply, projected on the current direction, which in turn is calculated by normalizing the velocity. So, why not write just that, normalization, multiplication and taking a component-wise <code>abs</code>. As we want negative wriction to count as acceleration <em>for no reason whatsoever</em>, we take the <code>abs</code> before scalar multiplication.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let friction = vel.value.normalize().abs() * fri.value;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, we need the methods <code>normalize</code> and <code>abs</code> for our <code>Vector2d</code>. These are implemented as</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub fn normalize(&amp;self) -&gt; Self {
+    let length = self.length();
+    Vector2d {
+        x: self.x / length,
+        y: self.y / length,
+    }
+}
+
+pub fn abs(&amp;self) -&gt; Self {
+    Vector2d {
+        x: self.x.abs(),
+        y: self.y.abs(),
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Ok! Calculating the length of the new velocity <em>(magnitude)</em>. For this we are going to implement component-wise <code>max</code></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub fn max(&amp;self, max: f64) -&gt; Self {
+    Vector2d {
+        x: self.x.max(max),
+        y: self.y.max(max),
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>What we had before:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let magnitude_x = (vel.x.abs() - abs_friction_x).max(0.0);
+let magnitude_y = (vel.x.abs() - abs_friction_y).max(0.0);
+vel.x = vel.x.signum() * magnitude_x;
+vel.y = vel.y.signum() * magnitude_y;
+<span class="boring">}
+</span></code></pre></pre>
+<p>What we can write now:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let magnitude = (vel.value.abs() - friction).max(0.0);
+vel.value.x = vel.value.x.signum() * magnitude.x;
+vel.value.y = vel.value.y.signum() * magnitude.y;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Thus, our <code>apply_friction</code> has been reduced down to:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>if vel.value.length_squared() &lt; f64::EPSILON {
+    continue;
+}
+
+let friction = vel.value.normalize().abs() * fri.value;
+let magnitude = (vel.value.abs() - friction).max(0.0);
+vel.value.x = vel.value.x.signum() * magnitude.x;
+vel.value.y = vel.value.y.signum() * magnitude.y;
+<span class="boring">}
+</span></code></pre></pre>
 <h2><a class="header" href="#what-next" id="what-next">What next?</a></h2>
-<p>TODO</p>
+<p>Now that we have split everything to modules, things are starting to look tidy enough for us to start actually doing things again. Next up, we start to poke at getting rid of the <code>while let</code>-loops and replace those with something that scales a bit better in the future.</p>
+<p>The <code>From</code>-trait seems not to have been very good idea for components, probably going to scrap it in the next part. For this part, I was lazy and just changed the existing implementations to use <code>Vector2d</code> where applicable.</p>
 <p>The full source code can be found in branch <code>part-2</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-2">link</a>).</p>
 
                     </main>
