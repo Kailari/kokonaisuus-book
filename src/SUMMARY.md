@@ -5,3 +5,4 @@
 
 - [(Almost) walking skeleton](./chapter_1.md)
 - [Spring cleaning](./chapter_2.md)
+- [Iteratorception](./chapter_3.md)
