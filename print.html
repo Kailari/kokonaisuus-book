@@ -597,7 +597,7 @@ impl&lt;S: From&lt;T&gt;, T&gt; Into&lt;T&gt; for S {
 <li>In first case, whole <code>systems</code> module hierarchy needs to be defined in a single file. Typically this means that <code>systems</code> does not have any submodules and is rather simple on its own.</li>
 <li>Second case, all other files <em>(including directories)</em> in <code>src/systems/</code> directory can be treated as submodules of <code>systems</code> by adding <code>mod &lt;module name&gt;;</code> to <code>src/systems/mod.rs</code></li>
 </ol>
-<p>We use modules like 1. for simple, self-contained things, like <code>vector.rs</code>. Variant 2. is more suitable for <code>systems</code> in this case, as we can then declare all our actual systems as submodules of the <code>systems</code> module, keeping them all in a single file. Thus, our file structure is something like</p>
+<p>We use modules like 1. for simple, self-contained things, like <code>vector.rs</code>. Variant 2. is more suitable for <code>systems</code> in this case, as we can then declare all our actual systems as submodules of the <code>systems</code> module, keeping the systems themselves in their own modules. Thus, our file structure is something like</p>
 <pre><code>src/
 |--/main.rs
 |--/vector.rs
