@@ -1245,7 +1245,7 @@ pub struct IterTuple&lt;T&gt;
 }
 <span class="boring">}
 </span></code></pre></pre>
-<p>Looking familiar? This is the exact same thing we tried to implement using <code>Iterator</code>, but this time we use our own <code>IteratorTuple</code> trait so this is valid. <code>apply_velocity</code> should now compile again!</p>
+<p>Looking familiar? This is the exact same thing we tried to implement using <code>Iterator</code>, but this time we use our own <code>IteratorTuple</code> trait so this is valid, even though <em>the type we implement the trait on is actually <strong>external</strong>! (defined elsewhere by someone else)</em> Now, <code>apply_velocity</code> should pass the compiler again!</p>
 <p>Also, note that the local variables for the iterators need not be mutable at all, as we do not mutate them before passing them to <code>IterTuple::from</code>. That is <strong>we</strong> do not mutate them, but as we pass the ownership down to <code>IterTuple</code>, we don't actually care what they do with it as <em><code>IterTuple</code> now owns the iterators, thus it can anyway do whatever it wants with them</em>. In other words, when passing by value <em>(when moving the ownership)</em> mutability can &quot;change&quot;.</p>
 <p>We could add similar looking implementations to all other systems, but then again, for all 2-tuples, <em>the implementations are the same, but with different component types</em>. Do you know what that calls for?</p>
 <h3><a class="header" href="#generic-implementation-for-the-iteratortuple" id="generic-implementation-for-the-iteratortuple">Generic implementation for the <code>IteratorTuple</code></a></h3>
