@@ -1,0 +1,414 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Iteratorception - Step by step towards Insanity</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
+                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html" class="active"><strong aria-hidden="true">3.</strong> Iteratorception</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">Step by step towards Insanity</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#iteratorception" id="iteratorception">Iteratorception</a></h1>
+<p><em>&quot;Iterating tuples of iterators using an iterator&quot;</em></p>
+<h3><a class="header" href="#topics" id="topics">Topics</a></h3>
+<ul>
+<li><code>trait Iterator</code></li>
+<li>Custom traits</li>
+<li>Implementing traits on external types</li>
+</ul>
+<h2><a class="header" href="#what-are-we-trying-to-do" id="what-are-we-trying-to-do">What are we trying to do?</a></h2>
+<p><code>while let</code> is needlessly verbose, and with it we are stuck doing the pattern matching in the systems themselves. We would like to <em>abstract</em> that logic out of there to allow better handling for situations where entities don't have all components in the future. We are going to use standard language feature, <code>Iterators</code> which, well, was desinged for this very purpose, iterating over collections of things.</p>
+<p>There are some language limitations we need to take in account with our implementation, but mostly what we are doing here is quite simple once you wrap yuor head around it the correct way. For now, we are going with naïve approach where each system takes care of being able to iterate over their own component types.</p>
+<h2><a class="header" href="#one-iterator-to-rule-them-all" id="one-iterator-to-rule-them-all">One iterator to rule them all</a></h2>
+<p>So, basically we are again in situation where we have two iterators:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>let mut pos_iter = positions.iter_mut();
+let mut vel_iter = velocities.iter();
+<span class="boring">}
+</span></code></pre></pre>
+<p>and we would like to make mutation</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pos.value += vel.value;
+<span class="boring">}
+</span></code></pre></pre>
+<p>for each pair</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>(pos, vel) = (pos_iter.next(), vel_iter.next());
+<span class="boring">}
+</span></code></pre></pre>
+<p>until either <code>pos_iter.next()</code> or <code>vel_iter.next()</code> returns <code>None</code>.</p>
+<p>Written as a for loop, this would then look like:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>for (pos, vel) in (pos_iter, vel_iter) {
+    pos.value += vel.value;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Well, that would actually be perfectly valid code if the tuple <code>(pos_iter, vel_iter)</code> implemented the trait <code>Iterator</code>! How is the <code>Iterator</code> implemented then? Let's have a look at relevant parts of its definition:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>trait Iterator {
+    type Item;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt;;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>So, the iterator has an associated type which defines the type of the items the call to <code>.next()</code> produces. Then, the <code>.next()</code> itself returns an <code>Option</code>, which is either <code>None</code> <em>(no more items)</em> or <code>Some(value)</code> <em>(next item from the collection)</em>.</p>
+<p>In our case, the item would be a tuple of our child iterators' <code>Item</code> types and <code>next()</code> would simply do the pattern matching we currently do in the <code>while let</code> loops!</p>
+<p>For defining the <code>Item</code> from two iterators, assuming our iterators are <code>pos_iter</code> and <code>vel_iter</code> in the <code>apply_velocity</code>, we could just write the items &quot;just by knowing&quot; the type beforehand <em>(We know what <code>Iterator::Item</code> for <code>IterMut</code> and <code>Iter</code> look like)</em>:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>type Item = (&amp;mut PositionComponent, &amp;VelocityComponent);
+<span class="boring">}
+</span></code></pre></pre>
+<p>If we do not want to pull the child-iterators' item types out of thin air, and want more concrete way of referring to them, we can use <em>fully-qualified trait syntax</em> to refer to the <code>Iterator</code> implementations of our actual iterator types <em>(<code>IterMut</code> and <code>Iter</code> are structs)</em>. This looks a bit messy at first, but don't let that bother you.</p>
+<p>The basic syntax is</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>&lt;Struct as Trait&gt;::AssociatedType
+<span class="boring">}
+</span></code></pre></pre>
+<p>So, in our case, where we have <code>(IterMut, Iter)</code> from which we want the <code>Iterator::Item</code> types:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>type Item = (&lt;IterMut&lt;'a, PositionComponent&gt; as Iterator&gt;::Item,
+             &lt;Iter&lt;'a, VelocityComponent&gt; as Iterator&gt;::Item);
+<span class="boring">}
+</span></code></pre></pre>
+<p>What we are doing is just: We refer to <code>Iter</code> and <code>IterMut</code> as <code>Iterators</code> and use the <code>Item</code> associated type from the implementation of that trait to define a tuple of those iterators' items. This compiles to exactly the same code as the another snippet above. However, this allows us to refer to the <code>Item</code> types, without &quot;knowing&quot; what they look like beforehand. In our case, this doesn't bring us any benefits over directly using concrete types, but I prefer the more explicit form anyway.</p>
+<p>Now that we know how to implement the <code>Iterator</code>-trait, let's try implementing it on our tuple of component vector iterators:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;'a&gt; Iterator for (IterMut&lt;'a, PosComp&gt;, Iter&lt;'a, VelComp&gt;) {
+    type Item = (&lt;IterMut&lt;'a, PosComp&gt; as Iterator&gt;::Item,
+                 &lt;Iter&lt;'a, VelComp&gt; as Iterator&gt;::Item);
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+        match (self.0.next(), self.1.next()) {
+            (Some(pos), Some(vel)) =&gt; Some((pos, vel)),
+            _ =&gt; None,
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Looking great! Except, it does not compile. <strong>WHAT?!</strong></p>
+<p>Yeah. What happens here, we take an <strong>externally defined trait</strong> <code>Iterator</code> and define it on tuple of iterators, which like all tuples is an <strong>externally defined type</strong>. This breaks trait implementation <em>orphaning rules</em>.</p>
+<p>What is going on exactly?</p>
+<p>Well, how does the compiler know what traits it needs to use? For standard library, implementations provided are always in scope. For any other crate, we need to explicitly <code>use</code> that trait to bring its implementations to scope. For instance, let's assume there is some <code>trait Application</code>, provided by <code>app_utils</code> crate. The <code>Application</code> trait provides a <code>fn run(self)</code> which starts the application. In order for implementations of that trait to be visible, we must add <code>use app_utils::Application;</code> to our code to be able to call <code>app.run();</code></p>
+<p>Now, we just implemented the trait <code>Iterator</code> on an arbitrary tuple, <em>what do we import to bring that to scope?</em> The <code>Iterator</code> trait? But what if another crate implements the <code>Iterator</code> trait for that same tuple? The conclusion is, we have no way of safely referring to that implementation; it is now an orphan, it has no parent we can use to bring it to scope.</p>
+<p>But what can we do? Well, as per documentation, the preferred way seems to be to use a wrapper iterator type. However, we do not want to write individual wrapper iterators for all tuple sizes <em>(in the likely case we have tuples larger than 2-tuples in the future)</em>, so we define our own iterator trait in addition to creating our own iterator struct.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub trait IteratorTuple {
+    type ItemTuple;
+
+    fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt;;
+}
+
+pub struct IterTuple&lt;T&gt;
+    where T: IteratorTuple
+{
+    iterators: T,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>The trait <code>IteratorTuple</code> is straightforward, it's basically the standard <code>Iterator</code> with everything renamed. The iterator struct however, has a few things worth explaining.</p>
+<p>We define a type parameter <code>T</code> to be used as the type of the wrapped tuple of iterators. To keep things clean we declare the trait bounds on another line with the <code>where</code> keyword, followed by comma-separated list of desired bounds. In this case we have only one bound: <em>We require the type parameter <code>T</code> to implement <code>IteratorTuple</code></em>.</p>
+<p>Now, we know that the object wrapped into a <code>IterTuple</code>, whatever it is, always must implement <code>IteratorTuple</code>, thus now we can write <code>Iterator</code> implementation for <code>IterTuple</code> as easily as:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T&gt; Iterator for IterTuple&lt;T&gt;
+    where T: IteratorTuple
+{
+    type Item = T::ItemTuple;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        self.iterators.next_all()
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Here, we already know that <code>T</code> is an <code>IteratorTuple</code> so we do not need to use fully qualified syntax to refer to the <code>IteratorTuple::ItemTuple</code>, just <code>T::ItemTuple</code> suffices.</p>
+<p>At this point, one might wonder, if <code>IterTuple</code> is just dumb wrapper around the <code>IteratorTuple</code>, couldn't we just write blanket <code>Iterator</code> implementation to cover everything that implements <code>IteratorTuple</code>?</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T: IteratorTuple&gt; Iterator for T {
+    type Item = T::ItemTuple;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        // ...
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Sadly, no. The standard library already provides some blanket implementations over references of iterators, and our bounds overlap with those. I'm not 100% sure there is no way around this, but for now, it is just easier to work around it with our <code>IterTuple</code>-wrapper. For same reasons, we cannot implement <code>IntoIterator</code> either.</p>
+<p>For a bit nicer time constructing our iterator wrappers, <code>From&lt;T&gt;</code> is just the trait we need:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;T&gt; From&lt;T&gt; for IterTuple&lt;T&gt;
+    where T: IteratorTuple
+{
+    fn from(iter_tuple: T) -&gt; Self {
+        IterTuple { iterators: iter_tuple }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, in the <code>apply_velocity</code>, we can write the loop as:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>for (pos, vel) in IterTuple::from((pos_iter, vel_iter)) {
+    pos.value += vel.value;
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>...except it does not recognize <code>(pos_iter, vel_iter)</code> as a <code>IteratorTuple</code>, because we didn't implement that yet! Let's add that to the top of the <code>apply_velocity.rs</code> now:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;'a&gt; IteratorTuple for (IterMut&lt;'a, PositionComponent&gt;, Iter&lt;'a, VelocityComponent&gt;) {
+    type ItemTuple = (&lt;IterMut&lt;'a, PositionComponent&gt; as Iterator&gt;::Item,
+                      &lt;Iter&lt;'a, VelocityComponent&gt; as Iterator&gt;::Item);
+
+    fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+        match (self.0.next(), self.1.next()) {
+            (Some(pos), Some(vel)) =&gt; Some((pos, vel)),
+            _ =&gt; None,
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Looking familiar? This is the exact same thing we tried to implement using <code>Iterator</code>, but this time we use our own <code>IteratorTuple</code> trait so this is valid. <code>apply_velocity</code> should now compile again!</p>
+<p>Also, note that the local variables for the iterators need not be mutable at all, as we do not mutate them before passing them to <code>IterTuple::from</code>. That is <strong>we</strong> do not mutate them, but as we pass the ownership down to <code>IterTuple</code>, we don't actually care what they do with it as <em><code>IterTuple</code> now owns the iterators, thus it can anyway do whatever it wants with them</em>. In other words, when passing by value <em>(when moving the ownership)</em> mutability can &quot;change&quot;.</p>
+<p>We could add similar looking implementations to all other systems, but then again, for all 2-tuples, <em>the implementations are the same, but with different component types</em>. Do you know what that calls for?</p>
+<h3><a class="header" href="#generic-implementation-for-the-iteratortuple" id="generic-implementation-for-the-iteratortuple">Generic implementation for the <code>IteratorTuple</code></a></h3>
+<p><em>(The naïve implementation without added generics where each system has their own <code>IteratorTuple</code> implementation is in its own branch <code>part-3</code>, version with generics is in <code>part-4</code>)</em></p>
+<p>TODO</p>
+<h2><a class="header" href="#what-next" id="what-next">What next?</a></h2>
+<p>TODO</p>
+<p>The full source code can be found in branches <code>part-3</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-3">without generics</a>) and <code>part-4</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-4">with generics</a>)</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="chapter_2.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="chapter_2.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
