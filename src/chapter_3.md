@@ -12,7 +12,7 @@ What are we trying to do?
 -------------------------
 `while let` is needlessly verbose, and with it we are stuck doing the pattern matching in the systems themselves. We would like to *abstract* that logic out of there to allow better handling for situations where entities don't have all components in the future. We are going to use standard language feature, `Iterators` which, well, was desinged for this very purpose, iterating over collections of things.
 
-There are some language limitations we need to take in account with our implementation, but mostly what we are doing here is quite simple once you wrap yuor head around it the correct way. For now, we are going with naïve approach where each system takes care of being able to iterate over their own component types.
+There are some language limitations we need to take in account with our implementation, but mostly what we are doing here is quite simple. At first, we are going with naïve approach where each system takes care of being able to iterate over their own component types and then we refine our approach afterwards, to handle things in a bit more generic manner.
 
 One iterator to rule them all
 -----------------------------
@@ -47,11 +47,11 @@ trait Iterator {
 }
 ```
 
-So, the iterator has an associated type which defines the type of the items the call to `.next()` produces. Then, the `.next()` itself returns an `Option`, which is either `None` *(no more items)* or `Some(value)` *(next item from the collection)*.
+So, the iterator has an associated type which defines the type for items the call to `.next()` produces. Then, the `.next()` itself returns an `Option`, which is either `None` *(no more items)* or `Some(value)` *(next item from the collection)*.
 
-In our case, the item would be a tuple of our child iterators' `Item` types and `next()` would simply do the pattern matching we currently do in the `while let` loops!
+In our case, the item would be a tuple of our child iterators' `Item` types. Method `next()` we have already implemented as it would simply do very similarpattern matching than what we currently do in the `while let` loops!
 
-For defining the `Item` from two iterators, assuming our iterators are `pos_iter` and `vel_iter` in the `apply_velocity`, we could just write the items "just by knowing" the type beforehand *(We know what `Iterator::Item` for `IterMut` and `Iter` look like)*:
+For defining the `Item` from two iterators, assuming our iterators are `pos_iter` and `vel_iter` in the `apply_velocity`, we could write the items down "by just knowing the type beforehand" *(We know what `Iterator::Item` for `IterMut` and `Iter` look like)*:
 ```rust
 type Item = (&mut PositionComponent, &VelocityComponent);
 ```
@@ -66,13 +66,13 @@ So, in our case, where we have `(IterMut, Iter)` from which we want the `Iterato
 type Item = (<IterMut<'a, PositionComponent> as Iterator>::Item,
              <Iter<'a, VelocityComponent> as Iterator>::Item);
 ```
-What we are doing is just: We refer to `Iter` and `IterMut` as `Iterators` and use the `Item` associated type from the implementation of that trait to define a tuple of those iterators' items. This compiles to exactly the same code as the another snippet above. However, this allows us to refer to the `Item` types, without "knowing" what they look like beforehand. In our case, this doesn't bring us any benefits over directly using concrete types, but I prefer the more explicit form anyway.
+What we are doing is just: We refer to `Iter` and `IterMut` as `Iterators` and use the `Item` associated type from the implementation of that trait to define a tuple of those iterators' items. This compiles to exactly the same code as the *"we just know"* snippet above. However, this allows us to refer to the `Item` types, without "knowing" what they look like beforehand. In our case, this doesn't bring us any benefits over directly using concrete types, but I prefer the more explicit form anyway.
 
 Now that we know how to implement the `Iterator`-trait, let's try implementing it on our tuple of component vector iterators:
 ```rust
-impl<'a> Iterator for (IterMut<'a, PosComp>, Iter<'a, VelComp>) {
-    type Item = (<IterMut<'a, PosComp> as Iterator>::Item,
-                 <Iter<'a, VelComp> as Iterator>::Item);
+impl<'a> Iterator for (IterMut<'a, PositionComponent>, Iter<'a, VelocityCompopnent>) {
+    type Item = (<IterMut<'a, PositionComponent> as Iterator>::Item,
+                 <Iter<'a, VelocityComponent> as Iterator>::Item);
 
     fn next(&mut self) -> Option<Self::ItemTuple> {
         match (self.0.next(), self.1.next()) {
@@ -171,6 +171,17 @@ impl<'a> IteratorTuple for (IterMut<'a, PositionComponent>, Iter<'a, VelocityCom
 ```
 Looking familiar? This is the exact same thing we tried to implement using `Iterator`, but this time we use our own `IteratorTuple` trait so this is valid, even though *the type we implement the trait on is actually **external**! (defined elsewhere by someone else)* Now, `apply_velocity` should pass the compiler again!
 
+```rust
+pub fn apply_velocity(positions: &mut Vec<PositionComponent>, velocities: &Vec<VelocityComponent>) {
+    let pos_iter = positions.iter_mut();
+    let vel_iter = velocities.iter();
+
+    for (pos, vel) in IterTuple::from((pos_iter, vel_iter)) {
+        pos.value += vel.value;
+    }
+}
+```
+
 Also, note that the local variables for the iterators need not be mutable at all, as we do not mutate them before passing them to `IterTuple::from`. That is **we** do not mutate them, but as we pass the ownership down to `IterTuple`, we don't actually care what they do with it as *`IterTuple` now owns the iterators, thus it can anyway do whatever it wants with them*. In other words, when passing by value *(when moving the ownership)* mutability can "change".
 
 We could add similar looking implementations to all other systems, but then again, for all 2-tuples, *the implementations are the same, but with different component types*. Do you know what that calls for?
@@ -229,7 +240,7 @@ impl<A, B> IteratorTuple for (A, B)
 
     fn next_all(&mut self) -> Option<Self::ItemTuple> {
         match (self.0.next(), self.1.next()) {
-            (Some(pos), Some(vel)) => Some((pos, vel)),
+            (Some(a), Some(b)) => Some((a, b)),
             _ => None,
         }
     }

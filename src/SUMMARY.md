@@ -6,3 +6,5 @@
 - [(Almost) walking skeleton](./chapter_1.md)
 - [Spring cleaning](./chapter_2.md)
 - [Iteratorception](./chapter_3.md)
+- [`macro_rules!`](./chapter_4.md)
+- [The lifetime of `'a` system](./chapter_5.md)
