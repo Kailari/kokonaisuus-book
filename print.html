@@ -86,7 +86,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li></ol>
+                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li><li class="expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> macro_rules!</a></li><li class="expanded "><a href="chapter_5.html"><strong aria-hidden="true">5.</strong> The lifetime of 'a system</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -1065,7 +1065,7 @@ vel.value.y = vel.value.y.signum() * magnitude.y;
 </ul>
 <h2><a class="header" href="#what-are-we-trying-to-do-3" id="what-are-we-trying-to-do-3">What are we trying to do?</a></h2>
 <p><code>while let</code> is needlessly verbose, and with it we are stuck doing the pattern matching in the systems themselves. We would like to <em>abstract</em> that logic out of there to allow better handling for situations where entities don't have all components in the future. We are going to use standard language feature, <code>Iterators</code> which, well, was desinged for this very purpose, iterating over collections of things.</p>
-<p>There are some language limitations we need to take in account with our implementation, but mostly what we are doing here is quite simple once you wrap yuor head around it the correct way. For now, we are going with naïve approach where each system takes care of being able to iterate over their own component types.</p>
+<p>There are some language limitations we need to take in account with our implementation, but mostly what we are doing here is quite simple. At first, we are going with naïve approach where each system takes care of being able to iterate over their own component types and then we refine our approach afterwards, to handle things in a bit more generic manner.</p>
 <h2><a class="header" href="#one-iterator-to-rule-them-all" id="one-iterator-to-rule-them-all">One iterator to rule them all</a></h2>
 <p>So, basically we are again in situation where we have two iterators:</p>
 <pre><pre class="playpen"><code class="language-rust">
@@ -1110,9 +1110,9 @@ let mut vel_iter = velocities.iter();
 }
 <span class="boring">}
 </span></code></pre></pre>
-<p>So, the iterator has an associated type which defines the type of the items the call to <code>.next()</code> produces. Then, the <code>.next()</code> itself returns an <code>Option</code>, which is either <code>None</code> <em>(no more items)</em> or <code>Some(value)</code> <em>(next item from the collection)</em>.</p>
-<p>In our case, the item would be a tuple of our child iterators' <code>Item</code> types and <code>next()</code> would simply do the pattern matching we currently do in the <code>while let</code> loops!</p>
-<p>For defining the <code>Item</code> from two iterators, assuming our iterators are <code>pos_iter</code> and <code>vel_iter</code> in the <code>apply_velocity</code>, we could just write the items &quot;just by knowing&quot; the type beforehand <em>(We know what <code>Iterator::Item</code> for <code>IterMut</code> and <code>Iter</code> look like)</em>:</p>
+<p>So, the iterator has an associated type which defines the type for items the call to <code>.next()</code> produces. Then, the <code>.next()</code> itself returns an <code>Option</code>, which is either <code>None</code> <em>(no more items)</em> or <code>Some(value)</code> <em>(next item from the collection)</em>.</p>
+<p>In our case, the item would be a tuple of our child iterators' <code>Item</code> types. Method <code>next()</code> we have already implemented as it would simply do very similarpattern matching than what we currently do in the <code>while let</code> loops!</p>
+<p>For defining the <code>Item</code> from two iterators, assuming our iterators are <code>pos_iter</code> and <code>vel_iter</code> in the <code>apply_velocity</code>, we could write the items down &quot;by just knowing the type beforehand&quot; <em>(We know what <code>Iterator::Item</code> for <code>IterMut</code> and <code>Iter</code> look like)</em>:</p>
 <pre><pre class="playpen"><code class="language-rust">
 <span class="boring">#![allow(unused_variables)]
 </span><span class="boring">fn main() {
@@ -1135,14 +1135,14 @@ let mut vel_iter = velocities.iter();
              &lt;Iter&lt;'a, VelocityComponent&gt; as Iterator&gt;::Item);
 <span class="boring">}
 </span></code></pre></pre>
-<p>What we are doing is just: We refer to <code>Iter</code> and <code>IterMut</code> as <code>Iterators</code> and use the <code>Item</code> associated type from the implementation of that trait to define a tuple of those iterators' items. This compiles to exactly the same code as the another snippet above. However, this allows us to refer to the <code>Item</code> types, without &quot;knowing&quot; what they look like beforehand. In our case, this doesn't bring us any benefits over directly using concrete types, but I prefer the more explicit form anyway.</p>
+<p>What we are doing is just: We refer to <code>Iter</code> and <code>IterMut</code> as <code>Iterators</code> and use the <code>Item</code> associated type from the implementation of that trait to define a tuple of those iterators' items. This compiles to exactly the same code as the <em>&quot;we just know&quot;</em> snippet above. However, this allows us to refer to the <code>Item</code> types, without &quot;knowing&quot; what they look like beforehand. In our case, this doesn't bring us any benefits over directly using concrete types, but I prefer the more explicit form anyway.</p>
 <p>Now that we know how to implement the <code>Iterator</code>-trait, let's try implementing it on our tuple of component vector iterators:</p>
 <pre><pre class="playpen"><code class="language-rust">
 <span class="boring">#![allow(unused_variables)]
 </span><span class="boring">fn main() {
-</span>impl&lt;'a&gt; Iterator for (IterMut&lt;'a, PosComp&gt;, Iter&lt;'a, VelComp&gt;) {
-    type Item = (&lt;IterMut&lt;'a, PosComp&gt; as Iterator&gt;::Item,
-                 &lt;Iter&lt;'a, VelComp&gt; as Iterator&gt;::Item);
+</span>impl&lt;'a&gt; Iterator for (IterMut&lt;'a, PositionComponent&gt;, Iter&lt;'a, VelocityCompopnent&gt;) {
+    type Item = (&lt;IterMut&lt;'a, PositionComponent&gt; as Iterator&gt;::Item,
+                 &lt;Iter&lt;'a, VelocityComponent&gt; as Iterator&gt;::Item);
 
     fn next(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
         match (self.0.next(), self.1.next()) {
@@ -1247,6 +1247,19 @@ pub struct IterTuple&lt;T&gt;
 <span class="boring">}
 </span></code></pre></pre>
 <p>Looking familiar? This is the exact same thing we tried to implement using <code>Iterator</code>, but this time we use our own <code>IteratorTuple</code> trait so this is valid, even though <em>the type we implement the trait on is actually <strong>external</strong>! (defined elsewhere by someone else)</em> Now, <code>apply_velocity</code> should pass the compiler again!</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub fn apply_velocity(positions: &amp;mut Vec&lt;PositionComponent&gt;, velocities: &amp;Vec&lt;VelocityComponent&gt;) {
+    let pos_iter = positions.iter_mut();
+    let vel_iter = velocities.iter();
+
+    for (pos, vel) in IterTuple::from((pos_iter, vel_iter)) {
+        pos.value += vel.value;
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
 <p>Also, note that the local variables for the iterators need not be mutable at all, as we do not mutate them before passing them to <code>IterTuple::from</code>. That is <strong>we</strong> do not mutate them, but as we pass the ownership down to <code>IterTuple</code>, we don't actually care what they do with it as <em><code>IterTuple</code> now owns the iterators, thus it can anyway do whatever it wants with them</em>. In other words, when passing by value <em>(when moving the ownership)</em> mutability can &quot;change&quot;.</p>
 <p>We could add similar looking implementations to all other systems, but then again, for all 2-tuples, <em>the implementations are the same, but with different component types</em>. Do you know what that calls for?</p>
 <h3><a class="header" href="#generic-implementation-for-the-iteratortuple" id="generic-implementation-for-the-iteratortuple">Generic implementation for the <code>IteratorTuple</code></a></h3>
@@ -1306,7 +1319,7 @@ impl&lt;A, B&gt; SomeTrait for SomeStruct&lt;B&gt; {}       // error! type param
 
     fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
         match (self.0.next(), self.1.next()) {
-            (Some(pos), Some(vel)) =&gt; Some((pos, vel)),
+            (Some(a), Some(b)) =&gt; Some((a, b)),
             _ =&gt; None,
         }
     }
@@ -1318,6 +1331,378 @@ impl&lt;A, B&gt; SomeTrait for SomeStruct&lt;B&gt; {}       // error! type param
 <h2><a class="header" href="#what-next-3" id="what-next-3">What next?</a></h2>
 <p>Now that we have a generalized way of defining iterators, we are going to take a look at how we could handle other tuple sizes, without needing to write a lot of duplicate code by hand. We are going to use macros for this.</p>
 <p>The full source code can be found in branches <code>part-3</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-3">without generics</a>) and <code>part-4</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-4">with generics</a>)</p>
+<h1><a class="header" href="#macro_rules" id="macro_rules"><code>macro_rules!</code></a></h1>
+<p><em>&quot;Avoiding repeating ourselves by generating code with macros&quot;</em></p>
+<h3><a class="header" href="#topics-4" id="topics-4">Topics</a></h3>
+<ul>
+<li><code>macro_rules!</code></li>
+</ul>
+<h2><a class="header" href="#what-are-we-trying-to-do-4" id="what-are-we-trying-to-do-4">What are we trying to do?</a></h2>
+<p>Oh no! We have a system which requires 4-tuple of all components <em>(named <code>print_state</code>)</em>. We would have to write another <code>IteratorTuple</code> implementation to handle 4-tuples but that would be mostly duplicate code. Worse, if we add more systems in the future, we could need 3-tuples, 5-tuples, 12-tuples, and so forth. It gets quite unmanageable quite fast.</p>
+<p>Solution: There is a clear pattern on how the implementations expand as tuples grow in size. Use &quot;variadic declarative macros&quot; to generate appropriate implementations of different sizes. This means that we have all the possible tuple sizes handled, but we only need to write a single &quot;blueprint&quot; to handle all of them.</p>
+<p>The &quot;thing&quot; here is that we take the simplest solution available: writing lots of more-or-less trivial complexity boilerplate, but we are skipping the writing part. Afterwards, we still have most of the elegance of the simple solution intact, without putting in much additional effort!</p>
+<h2><a class="header" href="#declarative-macros" id="declarative-macros">Declarative macros</a></h2>
+<p>We are going to use something called <em>&quot;declarative macros&quot;</em> as starting point of our implementation. To start defining a macro, we call <code>macro_rules! macro_name {...}</code>. One might have noticed that some calls we are making have the exclamation mark (<code>!</code>) appended: This marks a call to a macro. <em>(Which means that we are calling a macro to create a macro!)</em></p>
+<p>Now, we start with something simple: let's write a macro without any parameters which just has our <code>IteratorTuple</code> implementation in it.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    () =&gt; {
+        impl&lt;A, B&gt; IteratorTuple for (A, B)
+            where A: Iterator,
+                  B: Iterator
+        {
+            type ItemTuple = (A::Item, B::Item);
+
+            fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+                match (self.0.next(), self.1.next()) {
+                    (Some(pos), Some(vel)) =&gt; Some((pos, vel)),
+                    _ =&gt; None,
+                }
+            }
+        }
+    };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>In practice, we just wrapped our <code>IteratorTuple</code> implementation to a fancy macro declaration. Now, below our macro declaration, we can add the line</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>implement_iterator_tuple!();
+<span class="boring">}
+</span></code></pre></pre>
+<p>to generate the implementation.</p>
+<p>The first line with <code>macro_rules!</code> just names our macro. Inside that block, we can then define a number of macro subtypes using:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span><span class="boring">macro_rules! example_macro {
+</span>() =&gt; {}; // Base type, called using &quot;example_macro!()&quot;
+(name) =&gt; {}; // Named subtype, called using &quot;example_macro! { name }&quot;
+<span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>Each macro sub-type starts with identifier and parameter declarations within parentheses, and is followed by a block defining what the macro expands to. Currently, in our case, the macro takes no parameters and just expands to a fixed block of code. Next, let's fix that and start replacing things with parameterized values.</p>
+<p>Parameter types for macros differ greatly from regular function parameters. We do not use concrete types for them, but rather <em>designators</em>, which are lower-level concept the compiler uses to differentiate whether or not some piece of code is valid in a context. The basic syntax is as follows:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span><span class="boring">macro_rules! example_macro {
+</span>    ( $arg0:designator, $arg1:designator, $arg2:designator ) =&gt; { }
+<span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>macro argument name starts with <code>$name</code> and then the <code>:designator</code> part is substituted with a relevant designator. There are a lot of different variations and choice depends completely on what the argument is going to be used for. Here's a few examples of available desingators, just so that you get the idea:</p>
+<ul>
+<li><code>block</code> - accepts any code block</li>
+<li><code>ident</code> - accepts any valid <em>identifier</em> <em>(names like <code>A</code>, <code>cat</code>, <code>QuickBrownFox</code>, etc.)</em></li>
+<li><code>literal</code> - literal constant</li>
+<li><code>expr</code> - any expression, like <code>a + b</code> or <code>42 + 24</code></li>
+<li><code>tt</code> - token tree. I won't go into detail with this one, but translates <em>to something quite low-level</em>. The important thing to note is that <code>tt</code> designator accepts almost anything and can be used in most situations.</li>
+</ul>
+<p>Now, let's replace our generic type parameter identifiers <code>A</code> and <code>B</code> with parameters!</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    ($A:ident, $B:ident) =&gt; {
+        impl&lt;$A, $B&gt; IteratorTuple for ($A, $B)
+            where $A: Iterator,
+                  $B: Iterator
+        {
+            type ItemTuple = ($A::Item, $B::Item);
+
+<span class="boring">           fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+</span><span class="boring">               match (self.0.next(), self.1.next()) {
+</span><span class="boring">                   (Some(a), Some(b)) =&gt; Some((a, b)),
+</span><span class="boring">                   _ =&gt; None,
+</span><span class="boring">               }
+</span><span class="boring">           }
+</span>        }
+    };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We added parameter declarations <code>($A:ident, $B:ident) =&gt; { ...</code> and then just prefixed all occurences of <code>A</code> and <code>B</code> with <code>$</code>. Now, we can call</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>implement_iterator_tuple2!(B, C);
+<span class="boring">}
+</span></code></pre></pre>
+<p>which expands to our implementation, but the <code>A</code> and <code>B</code> are now substituted with <code>B</code> and <code>C</code>, respectively! Not very useful yet, but getting there. Now, let's add more parameters. We just prefix things with dollar signs for now and get to actual useful stuff later:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    ($A:ident, $B:ident, $i0:tt, $i1:tt, $a:ident, $b:ident) =&gt; {
+        impl&lt;$A, $B&gt; IteratorTuple for ($A, $B)
+            where $A: Iterator,
+                  $B: Iterator
+        {
+            type ItemTuple = ($A::Item, $B::Item);
+
+            fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+                match (self.$i0.next(), self.$i1.next()) {
+                    (Some($a), Some($b)) =&gt; Some(($a, $b)),
+                    _ =&gt; None,
+                }
+            }
+        }
+    };
+}
+
+// And call it
+implement_iterator_tuple2!(B, C, 0, 1, a, b);
+<span class="boring">}
+</span></code></pre></pre>
+<p>The tuple indices and pattern matching parameter names are now also substituted from macro parameters. Now, we re-organize our parameters a bit and group logically connected parameters to tuples. The parameter declaration becomes:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>(( $i0:tt, $a:ident, $A:ident ), ( $i1:tt, $b:ident, $B:ident )) =&gt; {
+    /* snip */
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, notice how our parameters clearly repeat a pattern <code>(index, item_name, type_name)</code>? In order to expand from 2-tuple, to 3-tuple, we would need to add just another parameter tuple and add its substitutions to the macro. How could we automate that?</p>
+<p>This is where we move into <em>variadic macros</em>. We actually can write a macro which takes in variable number of our parameter 3-tuples and expands them into a n-tuple implementation of <code>IteratorTuple</code>.</p>
+<p>Basic variadic syntax for parameter definition is as follows:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>( $( $x:designator ),* ) =&gt; { .. }  // Macro with argument x repeated 0..n times
+( $( $x:designator ),+ ) =&gt; { .. }  // Macro with argument x repeated 1..n times
+<span class="boring">}
+</span></code></pre></pre>
+<p>We can also use tuples in out repeat pattern by wrapping the arguments in parentheses. For example:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>( $( ($x:ident, $y:expr) ),* ) =&gt; { .. } // Arguments x and y repeated 0..n times
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, let's try this with our arguments:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>($( ($i:tt, $item_name:ident, $type_name:ident) ),+) =&gt; { .. }
+<span class="boring">}
+</span></code></pre></pre>
+<p>that breaks down to:</p>
+<ul>
+<li><code>($( ... ),+) =&gt; { .. }</code> - Arguments repeat <code>1..n</code> times</li>
+<li><code>($i:tt, $item_name:ident, $type_name:ident)</code> - Each argument is a 3-tuple, where
+<ul>
+<li><code>$i:tt</code> - <code>i</code> is a token tree. Tuple indexing is a bit of a wild-card at language-level so  it's hard for compiler to validate what is a valid index for tuples. Just use <code>tt</code> to tell the compiler to &quot;not to worry about it&quot;.</li>
+<li><code>$item_name</code> - a bit of an extra. We don't want to use the capital letters for variable names when pattern matching <em>(which we totally could)</em>, so pass an extra argument for that</li>
+<li><code>$type_name</code> - Names for the generic type parameters. This and the <code>$item_name</code> are both <code>ident</code> so any valid identifier could be used.</li>
+</ul>
+</li>
+</ul>
+<p>So, in other words:</p>
+<blockquote>
+<p><em>&quot;Macro accepts 3-tuples of <code>i</code>, an <code>item name</code> and a <code>type name</code>. There should be one or more of these tuples.&quot;</em></p>
+</blockquote>
+<p>How do we put these to use then? Expanding macro parameters uses the exact same syntax as defining them. Let's approach this with examples. Assuming call to some macro with argument <code>$some_arg</code> with parameter values <code>a, b, c, ...</code></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>$( ... ),*              // Expand whatever it is inside the braces 0..n times
+$( ... ),+              // Expand whatever it is inside the braces 1..n times
+
+$( $some_arg ),*        // Expands to `a, b, c, ...` as many times as there
+                        // are $some_arg values available.
+
+$( $some_arg-1 ),*      //  Expands to `1+a-1, 1+b-1, 1+c-1, ...`
+$( 1+$some_arg-1 ),*    //  Expands to `1+a-1, 1+b-1, 1+c-1, ...`
+$( $a, $b ),*           //  Valid only if there are exactly the same number of
+                        //  both of the arguments `a` and `b` available
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, let's generate a 3-tuple with our macro by calling</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>define_iterator_tuple!((0, a, A), (1, b, B), (2, c, C))
+<span class="boring">}
+</span></code></pre></pre>
+<p>First, the <code>impl</code> line. Let's see what happens:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;$( $type_name ),+&gt; IteratorTuple for ($( $type_name ),+)
+    where $($type_name: Iterator),+
+<span class="boring">}
+</span></code></pre></pre>
+<p>Which expands to <em>(each individual expansion on its own line)</em></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;A, B, C&gt; IteratorTuple
+for (A, B, C)
+where A: Iterator, B: Iterator, C: Iterator,
+<span class="boring">}
+</span></code></pre></pre>
+<p>Then, we construct the <code>ItemTuple</code> associated type:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>type ItemTuple = ($($type_name::Item),+);
+<span class="boring">}
+</span></code></pre></pre>
+<p>which expands to</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>type ItemTuple = (A::Item, B::Item, C::Item);
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, the pattern matching has quite a few expansions, but the basic idea:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>match ($(self.$i.next()),+) {
+    ($( Some($item_name) ),+) =&gt; Some(($( $item_name ),+)),
+    _ =&gt; None,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>and after expansion:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>match (self.0.next(), self.1.next(), self.2.next()) {
+    (Some(a), Some(b), Some(c)) =&gt; Some((a, b, c)),
+    _ =&gt; None,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Thus, the complete macro is just:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    ($( ($i:tt, $item_name:ident, $type_name:ident) ),+) =&gt; {
+        impl&lt;$( $type_name ),+&gt; IteratorTuple for ($( $type_name ),+)
+            where $($type_name: Iterator),+
+        {
+            type ItemTuple = ($($type_name::Item),+);
+
+            fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+                match ($(self.$i.next()),+) {
+                    ($( Some($item_name) ),+) =&gt; Some(($( $item_name ),+)),
+                    _ =&gt; None,
+                }
+            }
+        }
+    };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Whew, that was a lot of stuff! Now, the only thing left to do is to call the macro for all tuple sizes we want to generate the implementations for. I chose to start with <code>n = 2..12</code>.</p>
+<p>Brace yourself, for <em>Der Mostrositat</em>:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>implement_iterator_tuple!((0, a, A), (1, b, B));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I), (9, j, J));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I), (9, j, J), (10, k, K));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I), (9, j, J), (10, k, K), (11, l, L));
+<span class="boring">}
+</span></code></pre></pre>
+<p>This implements the <code>IteratorTuple</code> for all n-tuples of iterators, for tuple sizes ranging from 2 to 12.</p>
+<h2><a class="header" href="#what-next-4" id="what-next-4">What next?</a></h2>
+<p>Now that iterating over component storages can be done easily for any number of components, it is time to start designing our dispatcher. Currently, our systems have nothing in common, they are just some arbitrary functions imported from some arbitrary modules. Along the same lines goes our components and their storage vectors. Thus, unifying the way we handle components and systems will be our first priority.</p>
+<p>The full source code can be found in branch <code>part-5</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-5">link</a>)</p>
+<h1><a class="header" href="#the-lifetime-of-a-system" id="the-lifetime-of-a-system">The Lifetime of <code>'a</code> system</a></h1>
+<p><em>&quot;Implementing the basic concept of a system&quot;</em></p>
+<h3><a class="header" href="#topics-5" id="topics-5">Topics</a></h3>
+<ul>
+<li>Lifetime annotations</li>
+<li>Lifetime elision</li>
+<li><em>(bonus)</em> Upcoming language concept: GAT</li>
+</ul>
+<h2><a class="header" href="#what-are-we-trying-to-do-5" id="what-are-we-trying-to-do-5">What are we trying to do?</a></h2>
+<p>The systems in our current implementation have nothing in common. We are going to change that by making each system their own struct and implementing a <code>System</code> trait on them. This allows us to have a single unified <code>System::tick</code>-method we can call on any system.</p>
+<p>This complicates parameter definition for the system tick function, however, and we are required to add <em>lifetime annotations</em> to few places to make the compiler understand that references to component storage vectors are alive for long enough.</p>
+<p>Also, we are adding the first <em>&quot;dumb&quot;-implementations</em> for the dispatcher and the component storage by moving system ticking and component initialization and storage to their own modules, out of the <code>main</code>.</p>
+<h2><a class="header" href="#spring-cleaning-vol-2" id="spring-cleaning-vol-2">Spring cleaning, vol. 2</a></h2>
+<p>First, in <code>main.rs</code>, we create two new submodules:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>mod component_storage;
+mod dispatcher;
+<span class="boring">}
+</span></code></pre></pre>
+<p>Then, today's goal is to replace the contents of our <code>pub fn main()</code> with</p>
+<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+    let mut components = ComponentStorage::new();
+    let dispatcher = Dispatcher::new();
+    dispatcher.dispatch(&amp;mut components);
+}
+</code></pre></pre>
+<p>Let's start with the component storage. In our new module <code>component_storage.rs</code>, we define a simple wrapper for our storage vectors:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>pub struct ComponentStorage {
+    pub positions: Vec&lt;PositionComponent&gt;,
+    pub velocities: Vec&lt;VelocityComponent&gt;,
+    pub accelerations: Vec&lt;AccelerationComponent&gt;,
+    pub frictions: Vec&lt;FrictionComponent&gt;,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Then, for convenience, we add a <code>::new()</code> associated function for constructing the default instance. What we do here is just cut-paste the old component initialization code, and use that to initialize a <code>ComponentStorage</code></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl ComponentStorage {
+    pub fn new() -&gt; ComponentStorage {
+        ComponentStorage {
+            positions: vec![
+<span class="boring">               PositionComponent::new(0.0, 0.0),
+</span><span class="boring">               PositionComponent::new(-42.0, -42.0),
+</span><span class="boring">               PositionComponent::new(234.0, 123.0),
+</span><span class="boring">               PositionComponent::new(6.0, 9.0),
+</span>            ],
+            velocities: vec![
+<span class="boring">               VelocityComponent::new(40.0, 10.0),
+</span><span class="boring">               VelocityComponent::new(30.0, 20.0),
+</span><span class="boring">               VelocityComponent::new(20.0, 30.0),
+</span><span class="boring">               VelocityComponent::new(10.0, 40.0),
+</span>            ],
+            frictions: vec![
+<span class="boring">               FrictionComponent::new(1.0),
+</span><span class="boring">               FrictionComponent::new(2.0),
+</span><span class="boring">               FrictionComponent::new(3.0),
+</span><span class="boring">               FrictionComponent::new(4.0),
+</span>            ],
+            accelerations: vec![
+<span class="boring">               AccelerationComponent::new(2.0, 16.0),
+</span><span class="boring">               AccelerationComponent::new(4.0, 2.0),
+</span><span class="boring">               AccelerationComponent::new(8.0, 4.0),
+</span><span class="boring">               AccelerationComponent::new(16.0, 8.0),
+</span>            ],
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<h2><a class="header" href="#what-next-5" id="what-next-5">What next?</a></h2>
+<p>TODO</p>
+<p>The full source code can be found in branch <code>part-6</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-6">link</a>)</p>
 
                     </main>
 

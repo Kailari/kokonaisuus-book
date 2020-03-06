@@ -1,0 +1,532 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>macro_rules! - Step by step towards Insanity</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
+                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li><li class="expanded "><a href="chapter_4.html" class="active"><strong aria-hidden="true">4.</strong> macro_rules!</a></li><li class="expanded "><a href="chapter_5.html"><strong aria-hidden="true">5.</strong> The lifetime of 'a system</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">Step by step towards Insanity</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#macro_rules" id="macro_rules"><code>macro_rules!</code></a></h1>
+<p><em>&quot;Avoiding repeating ourselves by generating code with macros&quot;</em></p>
+<h3><a class="header" href="#topics" id="topics">Topics</a></h3>
+<ul>
+<li><code>macro_rules!</code></li>
+</ul>
+<h2><a class="header" href="#what-are-we-trying-to-do" id="what-are-we-trying-to-do">What are we trying to do?</a></h2>
+<p>Oh no! We have a system which requires 4-tuple of all components <em>(named <code>print_state</code>)</em>. We would have to write another <code>IteratorTuple</code> implementation to handle 4-tuples but that would be mostly duplicate code. Worse, if we add more systems in the future, we could need 3-tuples, 5-tuples, 12-tuples, and so forth. It gets quite unmanageable quite fast.</p>
+<p>Solution: There is a clear pattern on how the implementations expand as tuples grow in size. Use &quot;variadic declarative macros&quot; to generate appropriate implementations of different sizes. This means that we have all the possible tuple sizes handled, but we only need to write a single &quot;blueprint&quot; to handle all of them.</p>
+<p>The &quot;thing&quot; here is that we take the simplest solution available: writing lots of more-or-less trivial complexity boilerplate, but we are skipping the writing part. Afterwards, we still have most of the elegance of the simple solution intact, without putting in much additional effort!</p>
+<h2><a class="header" href="#declarative-macros" id="declarative-macros">Declarative macros</a></h2>
+<p>We are going to use something called <em>&quot;declarative macros&quot;</em> as starting point of our implementation. To start defining a macro, we call <code>macro_rules! macro_name {...}</code>. One might have noticed that some calls we are making have the exclamation mark (<code>!</code>) appended: This marks a call to a macro. <em>(Which means that we are calling a macro to create a macro!)</em></p>
+<p>Now, we start with something simple: let's write a macro without any parameters which just has our <code>IteratorTuple</code> implementation in it.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    () =&gt; {
+        impl&lt;A, B&gt; IteratorTuple for (A, B)
+            where A: Iterator,
+                  B: Iterator
+        {
+            type ItemTuple = (A::Item, B::Item);
+
+            fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+                match (self.0.next(), self.1.next()) {
+                    (Some(pos), Some(vel)) =&gt; Some((pos, vel)),
+                    _ =&gt; None,
+                }
+            }
+        }
+    };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>In practice, we just wrapped our <code>IteratorTuple</code> implementation to a fancy macro declaration. Now, below our macro declaration, we can add the line</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>implement_iterator_tuple!();
+<span class="boring">}
+</span></code></pre></pre>
+<p>to generate the implementation.</p>
+<p>The first line with <code>macro_rules!</code> just names our macro. Inside that block, we can then define a number of macro subtypes using:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span><span class="boring">macro_rules! example_macro {
+</span>() =&gt; {}; // Base type, called using &quot;example_macro!()&quot;
+(name) =&gt; {}; // Named subtype, called using &quot;example_macro! { name }&quot;
+<span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>Each macro sub-type starts with identifier and parameter declarations within parentheses, and is followed by a block defining what the macro expands to. Currently, in our case, the macro takes no parameters and just expands to a fixed block of code. Next, let's fix that and start replacing things with parameterized values.</p>
+<p>Parameter types for macros differ greatly from regular function parameters. We do not use concrete types for them, but rather <em>designators</em>, which are lower-level concept the compiler uses to differentiate whether or not some piece of code is valid in a context. The basic syntax is as follows:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span><span class="boring">macro_rules! example_macro {
+</span>    ( $arg0:designator, $arg1:designator, $arg2:designator ) =&gt; { }
+<span class="boring">}
+</span><span class="boring">}
+</span></code></pre></pre>
+<p>macro argument name starts with <code>$name</code> and then the <code>:designator</code> part is substituted with a relevant designator. There are a lot of different variations and choice depends completely on what the argument is going to be used for. Here's a few examples of available desingators, just so that you get the idea:</p>
+<ul>
+<li><code>block</code> - accepts any code block</li>
+<li><code>ident</code> - accepts any valid <em>identifier</em> <em>(names like <code>A</code>, <code>cat</code>, <code>QuickBrownFox</code>, etc.)</em></li>
+<li><code>literal</code> - literal constant</li>
+<li><code>expr</code> - any expression, like <code>a + b</code> or <code>42 + 24</code></li>
+<li><code>tt</code> - token tree. I won't go into detail with this one, but translates <em>to something quite low-level</em>. The important thing to note is that <code>tt</code> designator accepts almost anything and can be used in most situations.</li>
+</ul>
+<p>Now, let's replace our generic type parameter identifiers <code>A</code> and <code>B</code> with parameters!</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    ($A:ident, $B:ident) =&gt; {
+        impl&lt;$A, $B&gt; IteratorTuple for ($A, $B)
+            where $A: Iterator,
+                  $B: Iterator
+        {
+            type ItemTuple = ($A::Item, $B::Item);
+
+<span class="boring">           fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+</span><span class="boring">               match (self.0.next(), self.1.next()) {
+</span><span class="boring">                   (Some(a), Some(b)) =&gt; Some((a, b)),
+</span><span class="boring">                   _ =&gt; None,
+</span><span class="boring">               }
+</span><span class="boring">           }
+</span>        }
+    };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>We added parameter declarations <code>($A:ident, $B:ident) =&gt; { ...</code> and then just prefixed all occurences of <code>A</code> and <code>B</code> with <code>$</code>. Now, we can call</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>implement_iterator_tuple2!(B, C);
+<span class="boring">}
+</span></code></pre></pre>
+<p>which expands to our implementation, but the <code>A</code> and <code>B</code> are now substituted with <code>B</code> and <code>C</code>, respectively! Not very useful yet, but getting there. Now, let's add more parameters. We just prefix things with dollar signs for now and get to actual useful stuff later:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    ($A:ident, $B:ident, $i0:tt, $i1:tt, $a:ident, $b:ident) =&gt; {
+        impl&lt;$A, $B&gt; IteratorTuple for ($A, $B)
+            where $A: Iterator,
+                  $B: Iterator
+        {
+            type ItemTuple = ($A::Item, $B::Item);
+
+            fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+                match (self.$i0.next(), self.$i1.next()) {
+                    (Some($a), Some($b)) =&gt; Some(($a, $b)),
+                    _ =&gt; None,
+                }
+            }
+        }
+    };
+}
+
+// And call it
+implement_iterator_tuple2!(B, C, 0, 1, a, b);
+<span class="boring">}
+</span></code></pre></pre>
+<p>The tuple indices and pattern matching parameter names are now also substituted from macro parameters. Now, we re-organize our parameters a bit and group logically connected parameters to tuples. The parameter declaration becomes:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>(( $i0:tt, $a:ident, $A:ident ), ( $i1:tt, $b:ident, $B:ident )) =&gt; {
+    /* snip */
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, notice how our parameters clearly repeat a pattern <code>(index, item_name, type_name)</code>? In order to expand from 2-tuple, to 3-tuple, we would need to add just another parameter tuple and add its substitutions to the macro. How could we automate that?</p>
+<p>This is where we move into <em>variadic macros</em>. We actually can write a macro which takes in variable number of our parameter 3-tuples and expands them into a n-tuple implementation of <code>IteratorTuple</code>.</p>
+<p>Basic variadic syntax for parameter definition is as follows:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>( $( $x:designator ),* ) =&gt; { .. }  // Macro with argument x repeated 0..n times
+( $( $x:designator ),+ ) =&gt; { .. }  // Macro with argument x repeated 1..n times
+<span class="boring">}
+</span></code></pre></pre>
+<p>We can also use tuples in out repeat pattern by wrapping the arguments in parentheses. For example:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>( $( ($x:ident, $y:expr) ),* ) =&gt; { .. } // Arguments x and y repeated 0..n times
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, let's try this with our arguments:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>($( ($i:tt, $item_name:ident, $type_name:ident) ),+) =&gt; { .. }
+<span class="boring">}
+</span></code></pre></pre>
+<p>that breaks down to:</p>
+<ul>
+<li><code>($( ... ),+) =&gt; { .. }</code> - Arguments repeat <code>1..n</code> times</li>
+<li><code>($i:tt, $item_name:ident, $type_name:ident)</code> - Each argument is a 3-tuple, where
+<ul>
+<li><code>$i:tt</code> - <code>i</code> is a token tree. Tuple indexing is a bit of a wild-card at language-level so  it's hard for compiler to validate what is a valid index for tuples. Just use <code>tt</code> to tell the compiler to &quot;not to worry about it&quot;.</li>
+<li><code>$item_name</code> - a bit of an extra. We don't want to use the capital letters for variable names when pattern matching <em>(which we totally could)</em>, so pass an extra argument for that</li>
+<li><code>$type_name</code> - Names for the generic type parameters. This and the <code>$item_name</code> are both <code>ident</code> so any valid identifier could be used.</li>
+</ul>
+</li>
+</ul>
+<p>So, in other words:</p>
+<blockquote>
+<p><em>&quot;Macro accepts 3-tuples of <code>i</code>, an <code>item name</code> and a <code>type name</code>. There should be one or more of these tuples.&quot;</em></p>
+</blockquote>
+<p>How do we put these to use then? Expanding macro parameters uses the exact same syntax as defining them. Let's approach this with examples. Assuming call to some macro with argument <code>$some_arg</code> with parameter values <code>a, b, c, ...</code></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>$( ... ),*              // Expand whatever it is inside the braces 0..n times
+$( ... ),+              // Expand whatever it is inside the braces 1..n times
+
+$( $some_arg ),*        // Expands to `a, b, c, ...` as many times as there
+                        // are $some_arg values available.
+
+$( $some_arg-1 ),*      //  Expands to `1+a-1, 1+b-1, 1+c-1, ...`
+$( 1+$some_arg-1 ),*    //  Expands to `1+a-1, 1+b-1, 1+c-1, ...`
+$( $a, $b ),*           //  Valid only if there are exactly the same number of
+                        //  both of the arguments `a` and `b` available
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, let's generate a 3-tuple with our macro by calling</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>define_iterator_tuple!((0, a, A), (1, b, B), (2, c, C))
+<span class="boring">}
+</span></code></pre></pre>
+<p>First, the <code>impl</code> line. Let's see what happens:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;$( $type_name ),+&gt; IteratorTuple for ($( $type_name ),+)
+    where $($type_name: Iterator),+
+<span class="boring">}
+</span></code></pre></pre>
+<p>Which expands to <em>(each individual expansion on its own line)</em></p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;A, B, C&gt; IteratorTuple
+for (A, B, C)
+where A: Iterator, B: Iterator, C: Iterator,
+<span class="boring">}
+</span></code></pre></pre>
+<p>Then, we construct the <code>ItemTuple</code> associated type:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>type ItemTuple = ($($type_name::Item),+);
+<span class="boring">}
+</span></code></pre></pre>
+<p>which expands to</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>type ItemTuple = (A::Item, B::Item, C::Item);
+<span class="boring">}
+</span></code></pre></pre>
+<p>Now, the pattern matching has quite a few expansions, but the basic idea:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>match ($(self.$i.next()),+) {
+    ($( Some($item_name) ),+) =&gt; Some(($( $item_name ),+)),
+    _ =&gt; None,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>and after expansion:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>match (self.0.next(), self.1.next(), self.2.next()) {
+    (Some(a), Some(b), Some(c)) =&gt; Some((a, b, c)),
+    _ =&gt; None,
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Thus, the complete macro is just:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>macro_rules! implement_iterator_tuple {
+    ($( ($i:tt, $item_name:ident, $type_name:ident) ),+) =&gt; {
+        impl&lt;$( $type_name ),+&gt; IteratorTuple for ($( $type_name ),+)
+            where $($type_name: Iterator),+
+        {
+            type ItemTuple = ($($type_name::Item),+);
+
+            fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+                match ($(self.$i.next()),+) {
+                    ($( Some($item_name) ),+) =&gt; Some(($( $item_name ),+)),
+                    _ =&gt; None,
+                }
+            }
+        }
+    };
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Whew, that was a lot of stuff! Now, the only thing left to do is to call the macro for all tuple sizes we want to generate the implementations for. I chose to start with <code>n = 2..12</code>.</p>
+<p>Brace yourself, for <em>Der Mostrositat</em>:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>implement_iterator_tuple!((0, a, A), (1, b, B));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I), (9, j, J));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I), (9, j, J), (10, k, K));
+implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E), (5, f, F), (6, g, G), (7, h, H), (8, i, I), (9, j, J), (10, k, K), (11, l, L));
+<span class="boring">}
+</span></code></pre></pre>
+<p>This implements the <code>IteratorTuple</code> for all n-tuples of iterators, for tuple sizes ranging from 2 to 12.</p>
+<h2><a class="header" href="#what-next" id="what-next">What next?</a></h2>
+<p>Now that iterating over component storages can be done easily for any number of components, it is time to start designing our dispatcher. Currently, our systems have nothing in common, they are just some arbitrary functions imported from some arbitrary modules. Along the same lines goes our components and their storage vectors. Thus, unifying the way we handle components and systems will be our first priority.</p>
+<p>The full source code can be found in branch <code>part-5</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-5">link</a>)</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="chapter_3.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+                            <a rel="next" href="chapter_5.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="chapter_3.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+                    <a href="chapter_5.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-159929183-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+
+    </body>
+</html>
