@@ -157,7 +157,7 @@
 <ul>
 <li>Lifetime annotations</li>
 <li>Lifetime elision</li>
-<li><em>(bonus)</em> Upcoming language concept: GAT</li>
+<li><em>(bonus)</em> Upcoming language feature: GAT</li>
 </ul>
 <h2><a class="header" href="#what-are-we-trying-to-do" id="what-are-we-trying-to-do">What are we trying to do?</a></h2>
 <p>The systems in our current implementation have nothing in common. We are going to change that by making each system their own struct and implementing a <code>System</code> trait on them. This allows us to have a single unified <code>System::tick</code>-method we can call on any system.</p>
@@ -165,58 +165,51 @@
 <p>Also, we are adding the first <em>&quot;dumb&quot;-implementations</em> for the dispatcher and the component storage by moving system ticking and component initialization and storage to their own modules, out of the <code>main</code>.</p>
 <h2><a class="header" href="#spring-cleaning-vol-2" id="spring-cleaning-vol-2">Spring cleaning, vol. 2</a></h2>
 <p>First, in <code>main.rs</code>, we create two new submodules:</p>
-<pre><pre class="playpen"><code class="language-rust">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>mod component_storage;
+<pre><code class="language-rust noplaypen">mod component_storage;
 mod dispatcher;
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>Then, today's goal is to replace the contents of our <code>pub fn main()</code> with</p>
-<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+<pre><code class="language-rust noplaypen">pub fn main() {
     let mut components = ComponentStorage::new();
     let dispatcher = Dispatcher::new();
     dispatcher.dispatch(&amp;mut components);
 }
-</code></pre></pre>
+</code></pre>
 <p>Let's start with the component storage. In our new module <code>component_storage.rs</code>, we define a simple wrapper for our storage vectors:</p>
-<pre><pre class="playpen"><code class="language-rust">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>pub struct ComponentStorage {
+<pre><code class="language-rust noplaypen">pub struct ComponentStorage {
     pub positions: Vec&lt;PositionComponent&gt;,
     pub velocities: Vec&lt;VelocityComponent&gt;,
     pub accelerations: Vec&lt;AccelerationComponent&gt;,
     pub frictions: Vec&lt;FrictionComponent&gt;,
 }
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>Then, for convenience, we add a <code>::new()</code> associated function for constructing the default instance. What we do here is just cut-paste the old component initialization code, and use that to initialize a <code>ComponentStorage</code></p>
-<pre><pre class="playpen"><code class="language-rust">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>impl ComponentStorage {
+<pre><code class="language-rust noplaypen">impl ComponentStorage {
     pub fn new() -&gt; ComponentStorage {
         ComponentStorage {
             positions: vec![
+                // ...
 <span class="boring">               PositionComponent::new(0.0, 0.0),
 </span><span class="boring">               PositionComponent::new(-42.0, -42.0),
 </span><span class="boring">               PositionComponent::new(234.0, 123.0),
 </span><span class="boring">               PositionComponent::new(6.0, 9.0),
 </span>            ],
             velocities: vec![
+                // ...
 <span class="boring">               VelocityComponent::new(40.0, 10.0),
 </span><span class="boring">               VelocityComponent::new(30.0, 20.0),
 </span><span class="boring">               VelocityComponent::new(20.0, 30.0),
 </span><span class="boring">               VelocityComponent::new(10.0, 40.0),
 </span>            ],
             frictions: vec![
+                // ...
 <span class="boring">               FrictionComponent::new(1.0),
 </span><span class="boring">               FrictionComponent::new(2.0),
 </span><span class="boring">               FrictionComponent::new(3.0),
 </span><span class="boring">               FrictionComponent::new(4.0),
 </span>            ],
             accelerations: vec![
+                // ...
 <span class="boring">               AccelerationComponent::new(2.0, 16.0),
 </span><span class="boring">               AccelerationComponent::new(4.0, 2.0),
 </span><span class="boring">               AccelerationComponent::new(8.0, 4.0),
@@ -225,10 +218,213 @@ mod dispatcher;
         }
     }
 }
+</code></pre>
+<p>Ok! We are going more in-depth with the component storage in the next part, so we're keeping it at that for now. Next up, unifying the systems.</p>
+<h3><a class="header" href="#defining-a-system-trait" id="defining-a-system-trait">Defining a <code>System</code> trait</a></h3>
+<p>So, systems are <em>stateless mutators</em> that take in varying selection of different components and perform some data mutation. The state after ticking is considered the output of a system and due to statelessness, should always be the same, assuming the same input. That is, the systems should be <em>deterministic</em>: The same input should always produce the same output.</p>
+<p>The latter point is bit far-fetched for now, but good to keep in mind. For now, let's focus on being able to tick the system.</p>
+<p>To allow systems to define arbitrary data as inputs <em>(different systems need different storage vectors)</em>, we define the inputs as an <em>associated type</em>. Now, first draft of our system trait can be written as:</p>
+<pre><code class="language-rust noplaypen">pub trait System {
+    type InputData;
+
+    fn tick(&amp;self, data: Self::InputData);
+}
+</code></pre>
+<p>Now, there is a slight flaw with our approach right now due to limitations of associated types. Let's try implementing <code>apply_acceleration</code> as a <code>System</code> to see what's wrong.</p>
+<p>First, define an empty struct to act as our system type:</p>
+<pre><code class="language-rust noplaypen">pub struct ApplyAccelerationSystem;
+</code></pre>
+<p>Later on, we could add things like configuration parameters to our systems, but for now, the struct can very well be &quot;empty&quot;.</p>
+<p>Now, the system implementation. <em>Following code, while mostly correct, does not compile</em></p>
+<pre><code class="language-rust noplaypen">impl System for ApplyAccelerationSystem {
+    type InputData = (&amp;mut Vec&lt;VelocityComponent&gt;,
+                      &amp;Vec&lt;AccelerationComponent&gt;);
+
+    fn tick(&amp;self, (velocities, accelerations): Self::InputData) {
+        let vel_iter = velocities.iter_mut();
+        let acc_iter = accelerations.iter();
+
+        for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+            vel.value += acc.value;
+        }
+    }
+}
+</code></pre>
+<p>The compiler complains something about requiring explicit lifetimes for references. What does that even mean? Well, the culprit is the fact that our parameter types <em>(which are references)</em> have now moved out of the method definition, into scope of the implementation block, and their lifetimes are now non-self-evident, as the compiler does not know where they will be used. If that does not make any sense, fear not, this is unintuitive as heck at first. <em>We actually briefly touched on the following in the first part, but here it is again:</em>.</p>
+<p>Let's see, what did we have before?</p>
+<pre><code class="language-rust noplaypen">pub fn apply_acceleration(vs: &amp;mut Vec&lt;VelComp&gt;, as: &amp;Vec&lt;AccComp&gt;) { // ...
+</code></pre>
+<p>Here, it is clear <em>(self-evident from the context)</em> that the references are going to live for the duration of the method call. Due to that, the compiler is actually able to apply some syntax-sugar called <em>parameter lifetime elision</em> to our method signature. What the signature would look like de-sugared to its full form is actually:</p>
+<pre><code class="language-rust noplaypen">pub fn apply_acceleration&lt;'a&gt;(vs: &amp;'a mut Vec&lt;VelComp&gt;, as: &amp;'a Vec&lt;AccComp&gt;) { // ...
+</code></pre>
+<p>which roughly translates to:</p>
+<pre><code class="language-rust noplaypen">pub fn apply_acceleration&lt;'a&gt;(vs: &amp;'a mut Vec&lt;VelComp&gt;, as: &amp;'a Vec&lt;AccComp&gt;)
+{   // lifetime 'a starts
+
+    // everything with lifetime 'a is guaranteed to be alive
+
+}   // lifetime 'a ends, reference parameters with lifetime 'a go out of scope
+    // and as they are dropped, their borrow ends
+</code></pre>
+<p>However, as said before, as it is self-evident from the context of the function signature that the parameters are probably going to have the same lifetime as the function, the lifetimes can normally be <em>elided</em>.</p>
+<p>But now that the parameter type is actually an associated type, we no longer have the context of the function at our disposal when defining the type! Well, let's try to fix that by adding a lifetime parameter to our <code>impl</code>:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a&gt; System for ApplyAccelerationSystem {
+    type InputData = (&amp;'a mut Vec&lt;VelocityComponent&gt;,
+                      &amp;'a Vec&lt;AccelerationComponent&gt;);
+
+    fn tick(&amp;self, (velocities, accelerations): Self::InputData) {
+        /* snip */
+<span class="boring">       let vel_iter = velocities.iter_mut();
+</span><span class="boring">       let acc_iter = accelerations.iter();
+</span><span class="boring">
+</span><span class="boring">       for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+</span><span class="boring">           vel.value += acc.value;
+</span><span class="boring">       }
+</span>    }
+}
+</code></pre>
+<p>...and it does not compile. Remember when we discussed about how generic parameters must be <em>constrained</em> by the types being used in the implementation definition? Well, here the problem is that the lifetime <code>'a</code> is not being constrained by neither <code>System</code> trait nor <code>ApplyAccelerationSystem</code>.</p>
+<p>The simple solution is to add dummy lifetime parameter to our <code>System</code>-trait:</p>
+<pre><code class="language-rust noplaypen">pub trait System&lt;'a&gt; { // &lt;-- we added lifetime 'a
+    type InputData;
+
+    fn tick(&amp;self, data: Self::InputData);
+}
+</code></pre>
+<p>Now, we can constrain the lifetime in the implementation</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a&gt; System&lt;'a&gt; for ApplyAccelerationSystem {
+    type InputData = (&amp;'a mut Vec&lt;VelocityComponent&gt;,
+                      &amp;'a Vec&lt;AccelerationComponent&gt;);
+
+    fn tick(&amp;self, (velocities, accelerations): Self::InputData) {
+        /* snip */
+<span class="boring">       let vel_iter = velocities.iter_mut();
+</span><span class="boring">       let acc_iter = accelerations.iter();
+</span><span class="boring">
+</span><span class="boring">       for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+</span><span class="boring">           vel.value += acc.value;
+</span><span class="boring">       }
+</span>    }
+}
+</code></pre>
+<p>Now it actually compiles! Looks confusing? Yes, but it works and is exactly how we are going to leave it for the foreseeable future.</p>
+<p>Lastly, one might wonder, what on earth is going on with the method <code>tick</code> parameters:</p>
+<pre><code class="language-rust noplaypen">fn tick(&amp;self, (velocities, accelerations): Self::InputData) { // ...
+</code></pre>
+<p>well, as we know what the <code>Self::InputData</code> is going to contain, and accessing the tuple items by indexing the tuple would look messy, we use pattern matching to destructure the tuple into named arguments. These have types from the <code>Self::InputData</code>, as in, what we are doing is equivalent to:</p>
+<pre><code class="language-rust noplaypen">fn tick(&amp;self, data: Self::InputData) {
+    let velocities: &amp;'a mut Vec&lt;VelocityComponent&gt; = data.0;
+    let accelerations: &amp;'a Vec&lt;AccelerationComponent&gt; = data.1;
+
+    // ...
+<span class="boring">   let vel_iter = velocities.iter_mut();
+</span><span class="boring">   let acc_iter = accelerations.iter();
+</span><span class="boring">
+</span><span class="boring">   for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+</span><span class="boring">       vel.value += acc.value;
+</span><span class="boring">   }
+</span>}
+</code></pre>
+<p>Now, after doing similar implementations to other systems, we can implement a simple &quot;dispatcher&quot; using the <code>ComponentStorage</code> from before. <em>(Actually, we just sequentially call <code>tick()</code> on all our systems, just like before, but at least it is inside a nice wrapper)</em>.</p>
+<h3><a class="header" href="#dispatcher" id="dispatcher">Dispatcher</a></h3>
+<p>First, for now, the struct is just wrapper for storing all our systems <em>(and the <code>new</code> function implementation is trivial as our systems do not contain data)</em>:</p>
+<pre><code class="language-rust noplaypen">pub struct Dispatcher {
+    print_state: PrintStateSystem,
+    print_positions: PrintPositionsSystem,
+    apply_acceleration: ApplyAccelerationSystem,
+    apply_friction: ApplyFrictionSystem,
+    apply_velocity: ApplyVelocitySystem,
+}
+
+<span class="boring">impl Dispatcher {
+</span><span class="boring">    pub fn new() -&gt; Dispatcher {
+</span><span class="boring">        Dispatcher {
+</span><span class="boring">            print_state: PrintStateSystem,
+</span><span class="boring">            print_positions: PrintPositionsSystem,
+</span><span class="boring">            apply_acceleration: ApplyAccelerationSystem,
+</span><span class="boring">            apply_friction: ApplyFrictionSystem,
+</span><span class="boring">            apply_velocity: ApplyVelocitySystem,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span><span class="boring">}
+</span></code></pre>
+<p>And the <code>dispatch</code> method is then just copy-paste of our original system function calls, but everything is now a call to <code>System::tick</code> and component vectors are in <code>components</code>:</p>
+<pre><code class="language-rust noplaypen"><span class="boring">impl Dispatcher {
+</span><span class="boring">    pub fn new() -&gt; Dispatcher {
+</span><span class="boring">        Dispatcher {
+</span><span class="boring">            print_state: PrintStateSystem,
+</span><span class="boring">            print_positions: PrintPositionsSystem,
+</span><span class="boring">            apply_acceleration: ApplyAccelerationSystem,
+</span><span class="boring">            apply_friction: ApplyFrictionSystem,
+</span><span class="boring">            apply_velocity: ApplyVelocitySystem,
+</span><span class="boring">        }
+</span><span class="boring">    }
+</span>
+    pub fn dispatch(&amp;self, components: &amp;mut ComponentStorage) {
+        println!(&quot;State before tick:&quot;);
+        self.print_state.tick((&amp;components.positions, &amp;components.velocities, &amp;components.accelerations, &amp;components.frictions));
+
+        self.apply_acceleration.tick((&amp;mut components.velocities, &amp;components.accelerations));
+        self.apply_friction.tick((&amp;mut components.velocities, &amp;components.frictions));
+        self.apply_velocity.tick((&amp;mut components.positions, &amp;components.velocities));
+
+        println!(&quot;\nPositions after tick:&quot;);
+        self.print_positions.tick(&amp;components.positions);
+    }
 <span class="boring">}
-</span></code></pre></pre>
+</span></code></pre>
+<p>This should be enough of a foundation we can start building the actual storages and dispatcher on.</p>
+<h3><a class="header" href="#bonus-more-about-lifetimes" id="bonus-more-about-lifetimes">Bonus: More about lifetimes</a></h3>
+<p>One might wonder:</p>
+<blockquote>
+<p><em>&quot;Ok, in the system implementation earlier <code>'a</code> was a lifetime defined in the trait. But what does it actually represent? It is lifetime of <strong>what</strong>, like actually?&quot;</em></p>
+</blockquote>
+<p>Now, that right there, is an exquisite question!
+<em>Short answer:</em> lifetime of the reference, whatever it means in the context where it is used
+<em>Long answer:</em> feeling adventurous? Read along!</p>
+<h4><a class="header" href="#out-of-scope-alert" id="out-of-scope-alert">OUT OF SCOPE ALERT</a></h4>
+<p><em>I personally don't fully undestand everything we discuss here. This explanation is based on my own, limited, understanding of what is going on. Take everything with a grain of salt.</em></p>
+<p>This particular situation is a very interesting corner-case of the current way of how associated types work. We have very well-defined context where our <code>type InputData</code> will be used, but then again, we have no way of conveying things like lifetimes from that context onto that type. That is, there is no concept of generics when dealing with associated types.</p>
+<p>Let's think for this a bit. Before, the lifetimes were <em>self-evident from the method context</em>. Has our situation changed in some way so that it should no longer be the case? Answer is actually &quot;no&quot;. However, Rust as a language is currently not able to accurately represent what we are trying to do.</p>
+<p>Why are the lifetimes non- self-evident in our new implementation?</p>
+<p>This is due to our choice of using an associated type for ensuring that system with any kind of input data can be called with the same <code>System::tick(&amp;self, data: Self::InputData)</code>-method. More precisely, the associated type does not know about the lifetime of any particular call to the tick- method, thus it needs to have &quot;just some arbitrary lifetime&quot;, which we seemingly just make out of thin air.</p>
+<p>This &quot;making things out of thin air&quot; is obviously, sub-optimal.</p>
+<p>Now, in context of a call to <code>tick()</code>, the <code>'a</code> lifetime <strong>actually represents just what it did earlier</strong>, the lifetime of the method. We just need to have the extra lifetime parameter on the trait for seemingly no reason at all, <strong>in order to be able to define the associated type</strong> <code>InputData</code> properly.</p>
+<h4><a class="header" href="#even-more-out-of-scope-alert" id="even-more-out-of-scope-alert">EVEN MORE OUT OF SCOPE ALERT</a></h4>
+<p><em>Next up, some quite specific topics I don't fully understand, on unfinished language features that likely won't be stable for couple more years.</em></p>
+<p>In distant future, what we could do is to utilize a upcoming language feature called <em>&quot;generic associated types&quot; (or GAT in short)</em>. This would allow us to define associated types with generics, so we could then write something like:</p>
+<pre><code class="language-rust noplaypen">trait System {
+    type InputData&lt;'a&gt;;
+
+    fn tick&lt;'a&gt;(&amp;self, _: Self::InputData&lt;'a&gt;);
+}
+
+impl System for ApplyAccelerationSystem {
+    type InputData&lt;'a&gt; = (&amp;'a mut Vec&lt;VelComp&gt;, &amp;'a Vec&lt;AccComp&gt;)
+
+    fn tick&lt;'a&gt;(&amp;self, (vs, ac): Self::InputData&lt;'a&gt;) {
+        // ...
+    }
+}
+</code></pre>
+<p>Note that the trait does not have the lifetime parameter anymore, anyone using the <code>InputData</code> associated type now needs to provide their own lifetime! This removes a lot of ambiguity from what the lifetime <code>'a</code> actually represents. As an added bonus, it might even be possible to elide the lifetime in the definition of the <code>tick</code> again <em>(as it should be self-evident from the context again!)</em>, so that the code then sugars to:</p>
+<pre><code class="language-rust noplaypen">trait System {
+    type InputData&lt;'a&gt;;
+
+    fn tick(&amp;self, _: Self::InputData);
+}
+
+impl System for ApplyAccelerationSystem {
+    type InputData&lt;'a&gt; = (&amp;'a mut Vec&lt;VelComp&gt;, &amp;'a Vec&lt;AccComp&gt;)
+
+    fn tick(&amp;self, (vs, ac): Self::InputData) {
+        // ...
+    }
+}
+</code></pre>
+<p>But sadly, there is currently a ton of issues blocking the progress on GATs, so we won't be able to do this code cleanup for quite a long while :c</p>
 <h2><a class="header" href="#what-next" id="what-next">What next?</a></h2>
-<p>TODO</p>
+<p>Now our systems and components are finally out of <code>main.rs</code>. Next, we start taking steps towards unifying the way we access component storage, so that ultimately the dispatcher does not need to know what types of components the system actually wants, and can then <em>&quot;just call <code>tick</code>&quot;</em> without further complications on deciding which component vectors to provide.</p>
 <p>The full source code can be found in branch <code>part-6</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-6">link</a>)</p>
 
                     </main>
