@@ -1761,10 +1761,7 @@ mod dispatcher;
 </code></pre>
 <p>Later on, we could add things like configuration parameters to our systems, but for now, the struct can very well be &quot;empty&quot;.</p>
 <p>Now, the system implementation. <em>Following code, while mostly correct, does not compile</em></p>
-<pre><pre class="playpen"><code class="language-rust does_not_compile">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>impl System for ApplyAccelerationSystem {
+<pre><code class="language-rust does_not_compile noplaypen">impl System for ApplyAccelerationSystem {
     type InputData = (&amp;mut Vec&lt;VelocityComponent&gt;,
                       &amp;Vec&lt;AccelerationComponent&gt;);
 
@@ -1777,8 +1774,7 @@ mod dispatcher;
         }
     }
 }
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <pre><code>error[E0106]: missing lifetime specifier
 |     type InputData = (&amp;mut Vec&lt;VelocityComponent&gt;,
 |                       ^ expected lifetime parameter
