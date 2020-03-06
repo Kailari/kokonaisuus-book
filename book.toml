@@ -9,3 +9,5 @@ title = "Step by step towards Insanity"
 theme = "src/theme"
 mathjax-support = true
 google-analytics = "UA-159929183-1"
+additional-css = ["third-party/ferris.css"]
+additional-js = ["third-party/ferris.js"]
