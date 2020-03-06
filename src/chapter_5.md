@@ -1,6 +1,6 @@
 The Lifetime of `'a` system
 ===========================
-*"Implementing the basic concept of a system"*
+*"Defining the basic concept of a system"*
 
 ### Topics
  - Lifetime annotations
@@ -108,7 +108,7 @@ pub struct ApplyAccelerationSystem;
 Later on, we could add things like configuration parameters to our systems, but for now, the struct can very well be "empty".
 
 Now, the system implementation. *Following code, while mostly correct, does not compile*
-```rust,noplaypen
+```rust,does_not_compile
 impl System for ApplyAccelerationSystem {
     type InputData = (&mut Vec<VelocityComponent>,
                       &Vec<AccelerationComponent>);
@@ -122,6 +122,11 @@ impl System for ApplyAccelerationSystem {
         }
     }
 }
+```
+```
+error[E0106]: missing lifetime specifier
+|     type InputData = (&mut Vec<VelocityComponent>,
+|                       ^ expected lifetime parameter
 ```
 
 The compiler complains something about requiring explicit lifetimes for references. What does that even mean? Well, the culprit is the fact that our parameter types *(which are references)* have now moved out of the method definition, into scope of the implementation block, and their lifetimes are now non-self-evident, as the compiler does not know where they will be used. If that does not make any sense, fear not, this is unintuitive as heck at first. *We actually briefly touched on the following in the first part, but here it is again:*.
@@ -148,21 +153,26 @@ pub fn apply_acceleration<'a>(vs: &'a mut Vec<VelComp>, as: &'a Vec<AccComp>)
 However, as said before, as it is self-evident from the context of the function signature that the parameters are probably going to have the same lifetime as the function, the lifetimes can normally be *elided*.
 
 But now that the parameter type is actually an associated type, we no longer have the context of the function at our disposal when defining the type! Well, let's try to fix that by adding a lifetime parameter to our `impl`:
-```rust,noplaypen
+```rust,does_not_compile,noplaypen
 impl<'a> System for ApplyAccelerationSystem {
     type InputData = (&'a mut Vec<VelocityComponent>,
                       &'a Vec<AccelerationComponent>);
 
     fn tick(&self, (velocities, accelerations): Self::InputData) {
         /* snip */
-#        let vel_iter = velocities.iter_mut();
-#        let acc_iter = accelerations.iter();
-#
-#        for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
-#            vel.value += acc.value;
-#        }
+#         let vel_iter = velocities.iter_mut();
+#         let acc_iter = accelerations.iter();
+# 
+#         for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+#             vel.value += acc.value;
+#         }
     }
 }
+```
+```
+error[E0207]: the lifetime parameter `'a` is not constrained by the impl trait, self type, or predicates
+| impl<'a> System for ApplyAccelerationSystem {
+|      ^^ unconstrained lifetime parameter
 ```
 ...and it does not compile. Remember when we discussed about how generic parameters must be *constrained* by the types being used in the implementation definition? Well, here the problem is that the lifetime `'a` is not being constrained by neither `System` trait nor `ApplyAccelerationSystem`.
 
@@ -183,12 +193,12 @@ impl<'a> System<'a> for ApplyAccelerationSystem {
 
     fn tick(&self, (velocities, accelerations): Self::InputData) {
         /* snip */
-#        let vel_iter = velocities.iter_mut();
-#        let acc_iter = accelerations.iter();
-#
-#        for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
-#            vel.value += acc.value;
-#        }
+#         let vel_iter = velocities.iter_mut();
+#         let acc_iter = accelerations.iter();
+# 
+#         for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+#             vel.value += acc.value;
+#         }
     }
 }
 ```
@@ -205,12 +215,12 @@ fn tick(&self, data: Self::InputData) {
     let accelerations: &'a Vec<AccelerationComponent> = data.1;
 
     // ...
-#    let vel_iter = velocities.iter_mut();
-#    let acc_iter = accelerations.iter();
-#
-#    for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
-#        vel.value += acc.value;
-#    }
+#     let vel_iter = velocities.iter_mut();
+#     let acc_iter = accelerations.iter();
+# 
+#     for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+#         vel.value += acc.value;
+#     }
 }
 ```
 
