@@ -15,7 +15,7 @@ The "thing" here is that we take the simplest solution available: writing lots o
 
 Declarative macros
 ------------------
-We are going to use something called *"declarative macros"* as starting point of our implementation. To start defining a macro, we call `macro_rules! macro_name {...}`. One might have noticed that some calls we are making have the exclamation mark (`!`) appended: This marks a call to a macro. *(Which means that we are calling a macro to create a macro!)*
+We are going to use something called *"declarative macros"* as starting point of our implementation. To start defining a macro, we call `macro_rules! macro_name {...}`. Earlier, one might have noticed that some calls we are making have the exclamation mark (`!`) appended *(e.g. `println!`, `write!`)*. The exclamation mark is used to indicate executing a macro. *(Which means that we are calling a macro to create a macro!)*
 
 Now, we start with something simple: let's write a macro without any parameters which just has our `IteratorTuple` implementation in it.
 ```rust
