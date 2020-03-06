@@ -1677,7 +1677,7 @@ implement_iterator_tuple!((0, a, A), (1, b, B), (2, c, C), (3, d, D), (4, e, E),
 <p>Now that iterating over component storages can be done easily for any number of components, it is time to start designing our dispatcher. Currently, our systems have nothing in common, they are just some arbitrary functions imported from some arbitrary modules. Along the same lines goes our components and their storage vectors. Thus, unifying the way we handle components and systems will be our first priority.</p>
 <p>The full source code can be found in branch <code>part-5</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-5">link</a>)</p>
 <h1><a class="header" href="#the-lifetime-of-a-system" id="the-lifetime-of-a-system">The Lifetime of <code>'a</code> system</a></h1>
-<p><em>&quot;Implementing the basic concept of a system&quot;</em></p>
+<p><em>&quot;Defining the basic concept of a system&quot;</em></p>
 <h3><a class="header" href="#topics-5" id="topics-5">Topics</a></h3>
 <ul>
 <li>Lifetime annotations</li>
@@ -1761,7 +1761,10 @@ mod dispatcher;
 </code></pre>
 <p>Later on, we could add things like configuration parameters to our systems, but for now, the struct can very well be &quot;empty&quot;.</p>
 <p>Now, the system implementation. <em>Following code, while mostly correct, does not compile</em></p>
-<pre><code class="language-rust noplaypen">impl System for ApplyAccelerationSystem {
+<pre><pre class="playpen"><code class="language-rust does_not_compile">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl System for ApplyAccelerationSystem {
     type InputData = (&amp;mut Vec&lt;VelocityComponent&gt;,
                       &amp;Vec&lt;AccelerationComponent&gt;);
 
@@ -1774,6 +1777,11 @@ mod dispatcher;
         }
     }
 }
+<span class="boring">}
+</span></code></pre></pre>
+<pre><code>error[E0106]: missing lifetime specifier
+|     type InputData = (&amp;mut Vec&lt;VelocityComponent&gt;,
+|                       ^ expected lifetime parameter
 </code></pre>
 <p>The compiler complains something about requiring explicit lifetimes for references. What does that even mean? Well, the culprit is the fact that our parameter types <em>(which are references)</em> have now moved out of the method definition, into scope of the implementation block, and their lifetimes are now non-self-evident, as the compiler does not know where they will be used. If that does not make any sense, fear not, this is unintuitive as heck at first. <em>We actually briefly touched on the following in the first part, but here it is again:</em>.</p>
 <p>Let's see, what did we have before?</p>
@@ -1793,20 +1801,24 @@ mod dispatcher;
 </code></pre>
 <p>However, as said before, as it is self-evident from the context of the function signature that the parameters are probably going to have the same lifetime as the function, the lifetimes can normally be <em>elided</em>.</p>
 <p>But now that the parameter type is actually an associated type, we no longer have the context of the function at our disposal when defining the type! Well, let's try to fix that by adding a lifetime parameter to our <code>impl</code>:</p>
-<pre><code class="language-rust noplaypen">impl&lt;'a&gt; System for ApplyAccelerationSystem {
+<pre><code class="language-rust does_not_compile noplaypen">impl&lt;'a&gt; System for ApplyAccelerationSystem {
     type InputData = (&amp;'a mut Vec&lt;VelocityComponent&gt;,
                       &amp;'a Vec&lt;AccelerationComponent&gt;);
 
     fn tick(&amp;self, (velocities, accelerations): Self::InputData) {
         /* snip */
-<span class="boring">       let vel_iter = velocities.iter_mut();
-</span><span class="boring">       let acc_iter = accelerations.iter();
+<span class="boring">        let vel_iter = velocities.iter_mut();
+</span><span class="boring">        let acc_iter = accelerations.iter();
 </span><span class="boring">
-</span><span class="boring">       for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
-</span><span class="boring">           vel.value += acc.value;
-</span><span class="boring">       }
+</span><span class="boring">        for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+</span><span class="boring">            vel.value += acc.value;
+</span><span class="boring">        }
 </span>    }
 }
+</code></pre>
+<pre><code>error[E0207]: the lifetime parameter `'a` is not constrained by the impl trait, self type, or predicates
+| impl&lt;'a&gt; System for ApplyAccelerationSystem {
+|      ^^ unconstrained lifetime parameter
 </code></pre>
 <p>...and it does not compile. Remember when we discussed about how generic parameters must be <em>constrained</em> by the types being used in the implementation definition? Well, here the problem is that the lifetime <code>'a</code> is not being constrained by neither <code>System</code> trait nor <code>ApplyAccelerationSystem</code>.</p>
 <p>The simple solution is to add dummy lifetime parameter to our <code>System</code>-trait:</p>
@@ -1823,12 +1835,12 @@ mod dispatcher;
 
     fn tick(&amp;self, (velocities, accelerations): Self::InputData) {
         /* snip */
-<span class="boring">       let vel_iter = velocities.iter_mut();
-</span><span class="boring">       let acc_iter = accelerations.iter();
+<span class="boring">        let vel_iter = velocities.iter_mut();
+</span><span class="boring">        let acc_iter = accelerations.iter();
 </span><span class="boring">
-</span><span class="boring">       for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
-</span><span class="boring">           vel.value += acc.value;
-</span><span class="boring">       }
+</span><span class="boring">        for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+</span><span class="boring">            vel.value += acc.value;
+</span><span class="boring">        }
 </span>    }
 }
 </code></pre>
@@ -1842,12 +1854,12 @@ mod dispatcher;
     let accelerations: &amp;'a Vec&lt;AccelerationComponent&gt; = data.1;
 
     // ...
-<span class="boring">   let vel_iter = velocities.iter_mut();
-</span><span class="boring">   let acc_iter = accelerations.iter();
+<span class="boring">    let vel_iter = velocities.iter_mut();
+</span><span class="boring">    let acc_iter = accelerations.iter();
 </span><span class="boring">
-</span><span class="boring">   for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
-</span><span class="boring">       vel.value += acc.value;
-</span><span class="boring">   }
+</span><span class="boring">    for (vel, acc) in IterTuple::from((vel_iter, acc_iter)) {
+</span><span class="boring">        vel.value += acc.value;
+</span><span class="boring">    }
 </span>}
 </code></pre>
 <p>Now, after doing similar implementations to other systems, we can implement a simple &quot;dispatcher&quot; using the <code>ComponentStorage</code> from before. <em>(Actually, we just sequentially call <code>tick()</code> on all our systems, just like before, but at least it is inside a nice wrapper)</em>.</p>
