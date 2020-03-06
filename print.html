@@ -31,6 +31,8 @@
 
         <!-- Custom theme stylesheets -->
         
+        <link rel="stylesheet" href="third-party/ferris.css">
+        
 
         
         <!-- MathJax -->
@@ -185,10 +187,7 @@ pos_i = pos_i + vel_i
 <p>That is, we would like to have a collection of entities and move all of them with their assigned velocities.</p>
 <h2><a class="header" href="#now-lets-get-started" id="now-lets-get-started">Now, let's get started!</a></h2>
 <p>Ok, seems simple enough! So, we need some way of describing the velocities and the positions. Let's create <em>&quot;components&quot;</em> for those:</p>
-<pre><pre class="playpen"><code class="language-rust">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>struct PositionComponent {
+<pre><code class="language-rust noplaypen">struct PositionComponent {
     x: f64,
     y: f64,
 }
@@ -197,11 +196,20 @@ struct VelocityComponent {
     x: f64,
     y: f64,
 }
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>KISS is my motto here <em>(Keep It Simple, Stupid!)</em>. Nothing fancy, no traits, no nothing, just plain good ol' structs. Both describe a property our &quot;entities&quot; will have.</p>
 <p>Now, let's initialize our entities at the beginning of <code>fn main()</code> using these components. For our current implementation, as all our <em>Entities</em> are the same <em>(a position and a velocity)</em> it is conceptually enough to treat them just as list indices. So, we initialize four entities:</p>
-<pre><pre class="playpen"><code class="language-rust">pub fn main() {
+<pre><pre class="playpen"><code class="language-rust"><span class="boring">struct PositionComponent {
+</span><span class="boring">    x: f64,
+</span><span class="boring">    y: f64,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct VelocityComponent {
+</span><span class="boring">    x: f64,
+</span><span class="boring">    y: f64,
+</span><span class="boring">}
+</span>
+pub fn main() {
     let mut positions = vec![
         PositionComponent { x: 0.0, y: 0.0 },
         PositionComponent { x: -42.0, y: -42.0 },
@@ -214,28 +222,23 @@ struct VelocityComponent {
         VelocityComponent { x: 20.0, y: 30.0 },
         VelocityComponent { x: 10.0, y: 40.0 },
     ];
-}
+
+    // ...
+<span class="boring">    println!(&quot;Position[2]: x={}, y={}&quot;, positions[2].x, positions[2].y);
+</span>}
 </code></pre></pre>
 <p>Here we use the <code>vec!</code>-macro to initialize the component &quot;storage vectors&quot; using the array initializer syntax. Note that in our described situations, the velocities are constant and only positions change, thus the positions is defined with <code>let mut</code> and velocities with <code>let</code>. This means that <code>positions</code> is <em>mutable</em>, so that its contents are allowed to change and <code>velocities</code> is <em>immutable</em> so its contents are guaranteed to stay at their initial values <em>(This causes trying to change any velocity to trigger a compiler error)</em>. Its useful to differentiate between <em>mutability</em> of the data like this for multiple reasons, but we won't go in-depth with that quite yet.</p>
 <p>The component initialization itself is done by struct construction syntax like this:</p>
-<pre><pre class="playpen"><code class="language-rust">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>PositionComponent { x: 0.0, y: 0.0 }
-<span class="boring">}
-</span></code></pre></pre>
+<pre><code class="language-rust noplaypen">PositionComponent { x: 0.0, y: 0.0 }
+</code></pre>
 <p>Rust has no concept of constructors apart from the aforementioned syntax. Custom constructors are then just associated functions, which <em>just happen</em> to produce instances of the type. For instance, we could define <em>an associated constructor function</em> for the <code>PositionComponent</code> as follows:</p>
-<pre><pre class="playpen"><code class="language-rust">
-<span class="boring">#![allow(unused_variables)]
-</span><span class="boring">fn main() {
-</span>impl PositionComponent {
+<pre><code class="language-rust noplaypen">impl PositionComponent {
     fn new(x: f64, y: f64) -&gt; PositionComponent {
         // Names match so we don't need to write &quot;{ x: x, y: y }&quot;
         PositionComponent { x, y }
     }
 }
-<span class="boring">}
-</span></code></pre></pre>
+</code></pre>
 <p>However, in this case construction is quite trivial, so we avoid added complexity and use the default syntax instead. We'll add constructors later on, if needed.</p>
 <h3><a class="header" href="#mutating-data" id="mutating-data">Mutating data</a></h3>
 <p>Now, we would like to apply the data mutation, or in more general terms, we'd like to apply the velocities to the positions. This is the first draft of a <em>System</em> or the <em>S</em> in our <em>ECS</em>. First things first, what we are trying to do <em>(pseudocode)</em>:</p>
@@ -245,13 +248,35 @@ positions[2] += velocities[2];
 positions[3] += velocities[3];
 </code></pre>
 <p>If we knew we would always have just four entities, this would be fine, but as this does not scale very well. We are required to do better than that. Let's write that again, but this time with Rust's <em>iterators</em>:</p>
-<pre><pre class="playpen"><code class="language-rust">fn main() {
-    // ...
+<pre><pre class="playpen"><code class="language-rust panics"><span class="boring">struct PositionComponent {
+</span><span class="boring">    x: f64,
+</span><span class="boring">    y: f64,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct VelocityComponent {
+</span><span class="boring">    x: f64,
+</span><span class="boring">    y: f64,
+</span><span class="boring">}
+</span><span class="boring">
+</span>fn main() {
+<span class="boring">    let mut positions = vec![
+</span><span class="boring">        PositionComponent { x: 0.0, y: 0.0 },
+</span><span class="boring">        PositionComponent { x: -42.0, y: -42.0 },
+</span><span class="boring">        PositionComponent { x: 234.0, y: 123.0 },
+</span><span class="boring">        PositionComponent { x: 6.0, y: 9.0 },
+</span><span class="boring">    ];
+</span><span class="boring">    let velocities = vec![
+</span><span class="boring">        VelocityComponent { x: 40.0, y: 10.0 },
+</span><span class="boring">        VelocityComponent { x: 30.0, y: 20.0 },
+</span><span class="boring">        VelocityComponent { x: 20.0, y: 30.0 },
+</span><span class="boring">        VelocityComponent { x: 10.0, y: 40.0 },
+</span><span class="boring">    ];
+</span>    // ...
     let mut pos_iter = positions.iter_mut();
-    let mut vel_iter = positions.iter();
+    let mut vel_iter = velocities.iter();
 
     loop {
-        let pos = pos_iter.next().unwrap();
+        let pos = pos_iter.next().unwrap(); // panics on fifth iteration!
         let vel = vel_iter.next().unwrap();
         pos.x = pos.x + vel.x;
         pos.y = pos.y + vel.y;
@@ -262,7 +287,7 @@ positions[3] += velocities[3];
 <p>On the other hand, the <code>Iterator::next</code> returns <code>None</code> when it has iterated over the whole collection and there are no more items to iterate over. ...which is exactly what will happen on fifth iteration of that loop, causing the <code>Option::unwrap</code> to panic and crash.</p>
 <p>Darn, this doesn't quite work either.</p>
 <p>We need to somehow break the execution of that loop as soon as either of the iterators returns <code>None</code>. For this purpose, we can use <em>inline pattern matching</em>, more specifically the <code>while let</code> -loop. Let's forget about the mutation part for a bit and look at how we could print the values out, as it is a simpler situation, where we only read positions.</p>
-<pre><pre class="playpen"><code class="language-rust">fn main() {
+<pre><code class="language-rust noplaypen">fn main() {
     // Component initialization ...
     // Applying the velocities ...
 
@@ -272,18 +297,40 @@ positions[3] += velocities[3];
         println!(&quot;Position: ({},{})&quot;, position.x, position.y)
     }
 }
-</code></pre></pre>
+</code></pre>
 <p>Here, we match the next item from the <code>pos_iter</code>, and have two possible outcomes based on what that item ends up being.</p>
 <ol>
 <li>The item is <code>Some(position)</code>, the loop executes and <code>pos_iter.next()</code> is called again or</li>
 <li>The item is <code>None</code>, the loop breaks as the condition is not met</li>
 </ol>
 <p>Now, let's use this same pattern for applying the velocity:</p>
-<pre><pre class="playpen"><code class="language-rust">fn main() {
-    // Component initialization ...
+<pre><pre class="playpen"><code class="language-rust"><span class="boring">struct PositionComponent {
+</span><span class="boring">    x: f64,
+</span><span class="boring">    y: f64,
+</span><span class="boring">}
+</span><span class="boring">
+</span><span class="boring">struct VelocityComponent {
+</span><span class="boring">    x: f64,
+</span><span class="boring">    y: f64,
+</span><span class="boring">}
+</span><span class="boring">
+</span>fn main() {
+<span class="boring">    let mut positions = vec![
+</span><span class="boring">        PositionComponent { x: 0.0, y: 0.0 },
+</span><span class="boring">        PositionComponent { x: -42.0, y: -42.0 },
+</span><span class="boring">        PositionComponent { x: 234.0, y: 123.0 },
+</span><span class="boring">        PositionComponent { x: 6.0, y: 9.0 },
+</span><span class="boring">    ];
+</span><span class="boring">    let velocities = vec![
+</span><span class="boring">        VelocityComponent { x: 40.0, y: 10.0 },
+</span><span class="boring">        VelocityComponent { x: 30.0, y: 20.0 },
+</span><span class="boring">        VelocityComponent { x: 20.0, y: 30.0 },
+</span><span class="boring">        VelocityComponent { x: 10.0, y: 40.0 },
+</span><span class="boring">    ];
+</span>    // Component initialization ...
 
     let mut pos_iter = positions.iter_mut();
-    let mut vel_iter = positions.iter();
+    let mut vel_iter = velocities.iter();
 
     while let (Some(pos), Some(vel)) = (pos_iter.next(), vel_iter.next()) {
         pos.x = pos.x + vel.x;
@@ -291,10 +338,15 @@ positions[3] += velocities[3];
     }
 
     // Printing ...
-}
+<span class="boring">    let mut pos_iter = positions.iter();
+</span><span class="boring">
+</span><span class="boring">    while let Some(position) = pos_iter.next() {
+</span><span class="boring">        println!(&quot;Position: ({},{})&quot;, position.x, position.y)
+</span><span class="boring">    }
+</span>}
 </code></pre></pre>
 <p>Note the extra parentheses around the expressions on each side of the equivalence operator (<code>=</code>). Here, we are constructing a tuple <code>let item_tuple = (pos_iter.next(), vel_iter.next())</code> and matching that against the pattern <code>(Some(pos), Some(vel))</code> <em>(which is also a tuple)</em>. So what happens, if both items in the tuple are <code>Some(value)</code>, we execute the loop with <code>pos</code> being the next value from <code>pos_iter</code> and <code>vel</code> being the next value from <code>vel_iter</code> and in all other cases <em>(either one or both of the iterators returned <code>None</code>)</em>, the pattern will fail to match and the loop will break safely. Neat! </p>
-<p>Note that we use the same name for the <code>pos_iter</code> in both cases. By doing this, we are actually <em>shadowing</em> the iterator <code>pos_iter</code> when we define it for the second time.</p>
+<p>Also note that we use the same name for the <code>pos_iter</code> in both cases. By doing this, we are actually <em>shadowing</em> the iterator <code>pos_iter</code> when we define it for the second time.</p>
 <p><em>&quot;Shadowing&quot;</em> is just hiding some old unused variable by creating a new one with the exact same name. Here, we create a new <code>pos_iter</code> for iterating over the positions. Note that the newly created is an <em>immutable iterator</em> <em>(does not allow mutation of the underlying data)</em>, whereas the original, now shadowed iterator was a <em>mutable iterator</em>. <em>(Type of shadowed variable need not be the same as the new variable)</em></p>
 <h2><a class="header" href="#what-next" id="what-next">What next?</a></h2>
 <p>Now, while this &quot;works&quot;, there are a number of limitations here</p>
@@ -1963,6 +2015,8 @@ impl System for ApplyAccelerationSystem {
         <script src="book.js" type="text/javascript" charset="utf-8"></script>
 
         <!-- Custom JS scripts -->
+        
+        <script type="text/javascript" src="third-party/ferris.js"></script>
         
 
         
