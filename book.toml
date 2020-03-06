@@ -8,3 +8,4 @@ title = "Step by step towards Insanity"
 [output.html]
 theme = "src/theme"
 mathjax-support = true
+google-analytics = "UA-159929183-1"

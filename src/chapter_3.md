@@ -6,6 +6,7 @@ Iteratorception
  - `trait Iterator`
  - Custom traits
  - Implementing traits on external types
+ - Generic parameters on `impl`-blocks
 
 What are we trying to do?
 -------------------------
@@ -178,10 +179,70 @@ We could add similar looking implementations to all other systems, but then agai
 ### Generic implementation for the `IteratorTuple`
 *(The naïve implementation without added generics where each system has their own `IteratorTuple` implementation is in its own branch `part-3`, version with generics is in `part-4`)*
 
-TODO
+We would like to write a single *generic implementation* that works for any system that takes two component iterators. Iterators can either be mutable or immutable. In other words:
+> *"I would like to implement `IteratorTuple` on all 2-tuples of `IterMut` or `Iter` on any combination of components"*
+
+At first sight, this is seemingly impossible. The number of permutations quickly explodes out of control. Luckily, after pondering on this a bit, we notice that for all of our systems, two conditions are fulfilled:
+ 1. the iterator tuples are always 2-tuples
+ 2. all of the iterators in those tuples have a common level of abstraction, namely, the `Iterator`-trait
+
+*NOTE: (printer system is not counted in as it can use its single iterator without any trickery)*
+
+Now, with those two observations in mind, let's re-word our seemingly impossible issue:
+> *"I would like to implement `IteratorTuple` on all 2-tuples of any `A` and `B` that both implement `Iterator`"*
+
+Well, that sounds much more doable! See, when you can't find the answer, make sure you are asking the right questions! We just need some way of representing `A` and `B` in our implementation and we're basically done.
+
+On that final note, well, it's not that hard, actually. Rust makes this quite intuitive:
+```rust
+impl<A, B> IteratorTuple for (A, B)
+    where A: Iterator,
+          B: Iterator,
+{
+    /* snip */
+}
+```
+
+How on earth is that syntactically legitimate code? Where do the `A` and `B` come from? Answer is, from thin air! I just made them up on the go! *What* are they then? Well, as the `where` states, they are *anything that implements `Iterator`*.
+
+Well, the `A` and `B` must adhere to certain rules. They must be *constrained* by either by the trait or the type we are implementing the trait on. In this case, we constrain the generic parameters by using them in constructing the tuple type we implement the trait on.
+
+Let's see couple more examples of this.
+```rust
+impl<A, B> SomeTrait<A> for SomeStruct<B> {}    // ok!
+impl<A, B> SomeTrait<A, B> for SomeStruct {}    // ok!
+impl<A, B> SomeTrait for SomeStruct<A, B> {}    // ok!
+impl<A, B> SomeTrait<(A, B)> for SomeStruct {}  // ok!
+impl<A, B> SomeTrait<A> for SomeStruct {}       // error! type parameter B is unconstrained!
+impl<A, B> SomeTrait for SomeStruct<B> {}       // error! type parameter A is unconstrained!
+// etc.
+```
+
+Ok, let's get back to our implementation. Constructing the `type ItemTuple` for our `IteratorTuple` implementation is now quite simple as we already know that `A` and `B` are iterators, so `Iterator::Item` is directly available on them! That is
+```rust
+impl<A, B> IteratorTuple for (A, B)
+    where A: Iterator,
+          B: Iterator
+{
+    // No need for fully qualified syntax!
+    type ItemTuple = (A::Item, B::Item);
+
+    fn next_all(&mut self) -> Option<Self::ItemTuple> {
+        match (self.0.next(), self.1.next()) {
+            (Some(pos), Some(vel)) => Some((pos, vel)),
+            _ => None,
+        }
+    }
+}
+```
+
+Again, we do not need fully qulified syntax because `where` already states that `A` and `B`, in fact, are iterators. Also, in this case, `Self == (A, B)`, which is `(Iterator, Iterator)`, thus, `self.0` and `self.1` are iterators, and we are allowed to call `self.0.next()` and `self.1.next()` on them! From there on it's the familiar matching of tuple of optionals to create an optional of a tuple.
+
+Whew! Now we have it, this allows using any two iterators as `IteratorTuple`, for constructing a `IterTuple`. This allows us to get rid of all per-system `IteratorTuple` implementations. What we essentially have here is just a *blanket implementation* of `IteratorTuple` for any 2-tuples containing iterators. This currently works **only** for 2-tuples, although it would be easy to copy-paste and extend our implementation for 3-tuples and/or 4-tuples.
+
 
 What next?
 ----------
-TODO
+Now that we have a generalized way of defining iterators, we are going to take a look at how we could handle other tuple sizes, without needing to write a lot of duplicate code by hand. We are going to use macros for this.
 
 The full source code can be found in branches `part-3` ([without generics](https://github.com/Kailari/kokonaisuus/tree/part-3)) and `part-4` ([with generics](https://github.com/Kailari/kokonaisuus/tree/part-4))
