@@ -108,7 +108,7 @@ pub struct ApplyAccelerationSystem;
 Later on, we could add things like configuration parameters to our systems, but for now, the struct can very well be "empty".
 
 Now, the system implementation. *Following code, while mostly correct, does not compile*
-```rust,does_not_compile
+```rust,does_not_compile,noplaypen
 impl System for ApplyAccelerationSystem {
     type InputData = (&mut Vec<VelocityComponent>,
                       &Vec<AccelerationComponent>);
