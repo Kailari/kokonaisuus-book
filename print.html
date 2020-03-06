@@ -1061,6 +1061,7 @@ vel.value.y = vel.value.y.signum() * magnitude.y;
 <li><code>trait Iterator</code></li>
 <li>Custom traits</li>
 <li>Implementing traits on external types</li>
+<li>Generic parameters on <code>impl</code>-blocks</li>
 </ul>
 <h2><a class="header" href="#what-are-we-trying-to-do-3" id="what-are-we-trying-to-do-3">What are we trying to do?</a></h2>
 <p><code>while let</code> is needlessly verbose, and with it we are stuck doing the pattern matching in the systems themselves. We would like to <em>abstract</em> that logic out of there to allow better handling for situations where entities don't have all components in the future. We are going to use standard language feature, <code>Iterators</code> which, well, was desinged for this very purpose, iterating over collections of things.</p>
@@ -1250,9 +1251,72 @@ pub struct IterTuple&lt;T&gt;
 <p>We could add similar looking implementations to all other systems, but then again, for all 2-tuples, <em>the implementations are the same, but with different component types</em>. Do you know what that calls for?</p>
 <h3><a class="header" href="#generic-implementation-for-the-iteratortuple" id="generic-implementation-for-the-iteratortuple">Generic implementation for the <code>IteratorTuple</code></a></h3>
 <p><em>(The naïve implementation without added generics where each system has their own <code>IteratorTuple</code> implementation is in its own branch <code>part-3</code>, version with generics is in <code>part-4</code>)</em></p>
-<p>TODO</p>
+<p>We would like to write a single <em>generic implementation</em> that works for any system that takes two component iterators. Iterators can either be mutable or immutable. In other words:</p>
+<blockquote>
+<p><em>&quot;I would like to implement <code>IteratorTuple</code> on all 2-tuples of <code>IterMut</code> or <code>Iter</code> on any combination of components&quot;</em></p>
+</blockquote>
+<p>At first sight, this is seemingly impossible. The number of permutations quickly explodes out of control. Luckily, after pondering on this a bit, we notice that for all of our systems, two conditions are fulfilled:</p>
+<ol>
+<li>the iterator tuples are always 2-tuples</li>
+<li>all of the iterators in those tuples have a common level of abstraction, namely, the <code>Iterator</code>-trait</li>
+</ol>
+<p><em>NOTE: (printer system is not counted in as it can use its single iterator without any trickery)</em></p>
+<p>Now, with those two observations in mind, let's re-word our seemingly impossible issue:</p>
+<blockquote>
+<p><em>&quot;I would like to implement <code>IteratorTuple</code> on all 2-tuples of any <code>A</code> and <code>B</code> that both implement <code>Iterator</code>&quot;</em></p>
+</blockquote>
+<p>Well, that sounds much more doable! See, when you can't find the answer, make sure you are asking the right questions! We just need some way of representing <code>A</code> and <code>B</code> in our implementation and we're basically done.</p>
+<p>On that final note, well, it's not that hard, actually. Rust makes this quite intuitive:</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;A, B&gt; IteratorTuple for (A, B)
+    where A: Iterator,
+          B: Iterator,
+{
+    /* snip */
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>How on earth is that syntactically legitimate code? Where do the <code>A</code> and <code>B</code> come from? Answer is, from thin air! I just made them up on the go! <em>What</em> are they then? Well, as the <code>where</code> states, they are <em>anything that implements <code>Iterator</code></em>.</p>
+<p>Well, the <code>A</code> and <code>B</code> must adhere to certain rules. They must be <em>constrained</em> by either by the trait or the type we are implementing the trait on. In this case, we constrain the generic parameters by using them in constructing the tuple type we implement the trait on.</p>
+<p>Let's see couple more examples of this.</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;A, B&gt; SomeTrait&lt;A&gt; for SomeStruct&lt;B&gt; {}    // ok!
+impl&lt;A, B&gt; SomeTrait&lt;A, B&gt; for SomeStruct {}    // ok!
+impl&lt;A, B&gt; SomeTrait for SomeStruct&lt;A, B&gt; {}    // ok!
+impl&lt;A, B&gt; SomeTrait&lt;(A, B)&gt; for SomeStruct {}  // ok!
+impl&lt;A, B&gt; SomeTrait&lt;A&gt; for SomeStruct {}       // error! type parameter B is unconstrained!
+impl&lt;A, B&gt; SomeTrait for SomeStruct&lt;B&gt; {}       // error! type parameter A is unconstrained!
+// etc.
+<span class="boring">}
+</span></code></pre></pre>
+<p>Ok, let's get back to our implementation. Constructing the <code>type ItemTuple</code> for our <code>IteratorTuple</code> implementation is now quite simple as we already know that <code>A</code> and <code>B</code> are iterators, so <code>Iterator::Item</code> is directly available on them! That is</p>
+<pre><pre class="playpen"><code class="language-rust">
+<span class="boring">#![allow(unused_variables)]
+</span><span class="boring">fn main() {
+</span>impl&lt;A, B&gt; IteratorTuple for (A, B)
+    where A: Iterator,
+          B: Iterator
+{
+    // No need for fully qualified syntax!
+    type ItemTuple = (A::Item, B::Item);
+
+    fn next_all(&amp;mut self) -&gt; Option&lt;Self::ItemTuple&gt; {
+        match (self.0.next(), self.1.next()) {
+            (Some(pos), Some(vel)) =&gt; Some((pos, vel)),
+            _ =&gt; None,
+        }
+    }
+}
+<span class="boring">}
+</span></code></pre></pre>
+<p>Again, we do not need fully qulified syntax because <code>where</code> already states that <code>A</code> and <code>B</code>, in fact, are iterators. Also, in this case, <code>Self == (A, B)</code>, which is <code>(Iterator, Iterator)</code>, thus, <code>self.0</code> and <code>self.1</code> are iterators, and we are allowed to call <code>self.0.next()</code> and <code>self.1.next()</code> on them! From there on it's the familiar matching of tuple of optionals to create an optional of a tuple.</p>
+<p>Whew! Now we have it, this allows using any two iterators as <code>IteratorTuple</code>, for constructing a <code>IterTuple</code>. This allows us to get rid of all per-system <code>IteratorTuple</code> implementations. What we essentially have here is just a <em>blanket implementation</em> of <code>IteratorTuple</code> for any 2-tuples containing iterators. This currently works <strong>only</strong> for 2-tuples, although it would be easy to copy-paste and extend our implementation for 3-tuples and/or 4-tuples.</p>
 <h2><a class="header" href="#what-next-3" id="what-next-3">What next?</a></h2>
-<p>TODO</p>
+<p>Now that we have a generalized way of defining iterators, we are going to take a look at how we could handle other tuple sizes, without needing to write a lot of duplicate code by hand. We are going to use macros for this.</p>
 <p>The full source code can be found in branches <code>part-3</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-3">without generics</a>) and <code>part-4</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-4">with generics</a>)</p>
 
                     </main>
@@ -1278,6 +1342,23 @@ pub struct IterTuple&lt;T&gt;
 
         
 
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-159929183-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
         
 
         
