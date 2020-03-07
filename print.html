@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li><li class="expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> macro_rules!</a></li><li class="expanded "><a href="chapter_5.html"><strong aria-hidden="true">5.</strong> The lifetime of 'a system</a></li></ol>
+                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li><li class="expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> macro_rules!</a></li><li class="expanded "><a href="chapter_5.html"><strong aria-hidden="true">5.</strong> The lifetime of 'a system</a></li><li class="expanded "><a href="chapter_6.html"><strong aria-hidden="true">6.</strong> Component TypeId</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -1959,6 +1959,396 @@ impl System for ApplyAccelerationSystem {
 <h2><a class="header" href="#what-next-5" id="what-next-5">What next?</a></h2>
 <p>Now our systems and components are finally out of <code>main.rs</code>. Next, we start taking steps towards unifying the way we access component storage, so that ultimately the dispatcher does not need to know what types of components the system actually wants, and can then <em>&quot;just call <code>tick</code>&quot;</em> without further complications on deciding which component vectors to provide.</p>
 <p>The full source code can be found in branch <code>part-6</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-6">link</a>)</p>
+<h1><a class="header" href="#component-typeid" id="component-typeid">Component <code>TypeId</code></a></h1>
+<p><em>&quot;First draft for generalized storage access&quot;</em></p>
+<h3><a class="header" href="#topics-6" id="topics-6">Topics</a></h3>
+<ul>
+<li><code>trait Any</code></li>
+<li><code>RefCell&lt;T&gt;</code> for interrior mutability of immutable references</li>
+<li><code>dyn Trait</code> <em>(Trait objects)</em></li>
+</ul>
+<h2><a class="header" href="#what-are-we-trying-to-do-6" id="what-are-we-trying-to-do-6">What are we trying to do?</a></h2>
+<p>First step towards getting the dispatcher working in an automated manner is to unify the way we access the component storage. This is seemingly though issue from the perspective of the ownership and borrow-checker, as we simultaneoulsy require references to multiple component vectors stored inside the component storage. <em>(We soon learn that mutably borrowing just one storage using a &quot;getter&quot; method renders the rest of the storage inaccessible)</em></p>
+<p>So, what we are going to do this time is to try and come up with some way of fetching the relevant component storage vector, knowing just its type. When we are finished, ticking the <code>apply_acceleration</code> looks like:</p>
+<pre><code class="language-rust noplaypen">self.apply_acceleration.tick((
+    storage.fetch_mut::&lt;VelocityComponent&gt;().as_mut(),
+    storage.fetch_ref::&lt;AccelerationComponent&gt;().as_ref(),
+));
+</code></pre>
+<p><em>(Note that the component type is resolved just from the type! We do not provide any arguments to the <code>fetch_ref</code>/<code>fetch_mut</code> methods, they get the component type from the generic parameter!)</em></p>
+<h2><a class="header" href="#doing-it-the-wrong-way" id="doing-it-the-wrong-way">Doing it the wrong way</a></h2>
+<p>Let's see, what do we currently have?</p>
+<pre><code class="language-rust noplaypen">pub fn dispatch(&amp;self, components: &amp;mut ComponentStorage) {
+<span class="boring">    println!(&quot;State before tick:&quot;);
+</span><span class="boring">    self.print_state.tick((&amp;components.positions, &amp;components.velocities, &amp;components.accelerations, &amp;components.frictions));
+</span><span class="boring">    self.apply_acceleration.tick((&amp;mut components.velocities, &amp;components.accelerations));
+</span><span class="boring">    self.apply_friction.tick((&amp;mut components.velocities, &amp;components.frictions));
+</span>    // ...
+    self.apply_velocity.tick((&amp;mut components.positions, &amp;components.velocities));
+    // ...
+<span class="boring">    println!(&quot;\nPositions after tick:&quot;);
+</span><span class="boring">    self.print_positions.tick(&amp;components.positions);
+</span>}
+</code></pre>
+<p>We refer to the individual component storage vectors by directly getting them from the <code>ComponentStorage</code> struct and borrowing them directly. This works, but on the long run we won't have such fields anymore so an unified way of accessing the storage is required.</p>
+<p>First, we create naïve getters for those storages to see what issues there could be when direct references are no longer used. We add two new methods to the component storage:</p>
+<pre><code class="language-rust noplaypen">impl ComponentStorage {
+    /* snip */
+
+    pub fn fetch_mut_positions(&amp;mut self) -&gt; &amp;mut Vec&lt;PositionComponent&gt; {
+        &amp;mut self.positions
+    }
+
+    pub fn fetch_ref_velocities(&amp;self) -&gt; &amp;Vec&lt;VelocityComponent&gt; {
+        &amp;self.velocities
+    }
+}
+</code></pre>
+<p>Then, when we try to change the dispatcher to use these, this happens:</p>
+<pre><code class="language-rust noplaypen does_not_compile">self.apply_velocity.tick((
+    storage.fetch_mut_positions(),
+    storage.fetch_ref_velocities(),
+));
+</code></pre>
+<pre><code>error[E0502]: cannot borrow `*storage` as immutable because it is also borrowed as mutable
+  --&gt; src\dispatcher.rs
+|
+|           self.apply_velocity.tick((
+|  __________________________________-
+| |             storage.fetch_mut_positions(),
+| |             ------- mutable borrow occurs here
+| |             storage.fetch_ref_velocities(),
+| |             ^^^^^^^ immutable borrow occurs here
+| |         ));
+| |_________- mutable borrow later used here
+</code></pre>
+<p>Here the compiler knows less than we do. Due to the way we store our vectors inside a single struct, compiler sees the first &quot;getter&quot; as mutable borrow <em>for the storage wrapper</em> which then further borrows the component vector. The mutable borrow for the storage wrapper stays in effect until the component vector borrow ends.</p>
+<p>...which in turn prevents us from borrowing the another vector, because we cannot borrow the storage wrapper for borrowing its contents!</p>
+<p>This is bit annoying, as to us, at least, it is clear that there is no risk of simultaneous mutable access to either of the vectors. But what can we do?</p>
+<p>Well, when you think of it, we are mutating and accessing the <em>contents</em> of the storage, but the storage itself stays immutable for the most part. What we wish to do here is <em>interrior mutability of an immutable object</em>. That is, we wish to allow mutating the vectors' contents, but not adding or removing new vectors to the storage.</p>
+<h3><a class="header" href="#standard-library-interrior-mutability-refcellt" id="standard-library-interrior-mutability-refcellt">Standard library interrior mutability: <code>RefCell&lt;T&gt;</code></a></h3>
+<p>Luckily again, the standard library got our back here. <code>RefCell&lt;T&gt;</code> is meant for doing just what we are trying to accomplish here; skipping the borrow-checking at compile time and trusting that we know what we are doing and performing the borrow-checkign dynamically at runtime.</p>
+<p>Sounds scary, huh? Well, we are sacrificing a bit of our compile-time safety-net for more flexible way of doing things. All in all, as long as you don't try to fetch same storage mutably two times, or try to provide the same storage mutably <strong>and</strong> immutably to the same system, there should be no risk of accidentally causing panics with the runtime borrow checker.</p>
+<p><em>There are actually a lot of cases what can go wrong, but we'll try to eliminate those with safe wrappers later on!</em></p>
+<p>Now, even though the implications are quite complex, the usage itself is quite straightforward. First, change our component vectors to <code>RefCell&lt;T&gt;</code>s:</p>
+<pre><code class="language-rust noplaypen">pub struct ComponentStorage {
+    positions: RefCell&lt;Vec&lt;PositionComponent&gt;&gt;,
+    velocities: RefCell&lt;Vec&lt;VelocityComponent&gt;&gt;,
+    accelerations: RefCell&lt;Vec&lt;AccelerationComponent&gt;&gt;,
+    frictions: RefCell&lt;Vec&lt;FrictionComponent&gt;&gt;,
+}
+
+impl ComponentStorage {
+    pub fn new() -&gt; ComponentStorage {
+        ComponentStorage {
+            positions: RefCell::new(vec![
+                // ...
+<span class="boring">               PositionComponent::new(0.0, 0.0),
+</span><span class="boring">               PositionComponent::new(-42.0, -42.0),
+</span><span class="boring">               PositionComponent::new(234.0, 123.0),
+</span><span class="boring">               PositionComponent::new(6.0, 9.0),
+</span>            ]),
+            velocities: RefCell::new(vec![
+                // ...
+<span class="boring">                VelocityComponent::new(40.0, 10.0),
+</span><span class="boring">                VelocityComponent::new(30.0, 20.0),
+</span><span class="boring">                VelocityComponent::new(20.0, 30.0),
+</span><span class="boring">                VelocityComponent::new(10.0, 40.0),
+</span>            ]),
+            frictions: RefCell::new(vec![
+                // ...
+<span class="boring">                FrictionComponent::new(1.0),
+</span><span class="boring">                FrictionComponent::new(2.0),
+</span><span class="boring">                FrictionComponent::new(3.0),
+</span><span class="boring">                FrictionComponent::new(4.0),
+</span>            ]),
+            accelerations: RefCell::new(vec![
+                // ...
+<span class="boring">                AccelerationComponent::new(2.0, 16.0),
+</span><span class="boring">                AccelerationComponent::new(4.0, 2.0),
+</span><span class="boring">                AccelerationComponent::new(8.0, 4.0),
+</span><span class="boring">                AccelerationComponent::new(16.0, 8.0),
+</span>            ]),
+        }
+    }
+</code></pre>
+<p>There are slight changes to the getters too:</p>
+<pre><code class="language-rust noplaypen">pub fn fetch_positions_mut(&amp;self) -&gt; RefMut&lt;Vec&lt;PositionComponent&gt;&gt; {
+    self.positions.borrow_mut()
+}
+
+pub fn fetch_velocities_ref(&amp;self) -&gt; Ref&lt;Vec&lt;VelocityComponent&gt;&gt; {
+    self.velocities.borrow()
+}
+</code></pre>
+<p>We use the <code>borrow()</code> methods to indicate a <em>runtime borrow</em>. This then returns us a <code>Ref</code> or <code>RefMut</code> which are simply just <em>&quot;wrapper types for mutably/immutably borrowed value from <code>RefCell</code>&quot;</em>. This has something to do with the runtime borrow checking, I do not understand this fully, but <code>RefCell</code> requires ability to track when its mutable/immutable references go out of scope and these wrappers allow implementing that. Or something.</p>
+<p>The important thing is, if we tried to do this instead to match the previous implementation:</p>
+<pre><code class="language-rust does_not_compile noplaypen">pub fn fetch_positions_mut(&amp;self) -&gt; &amp;mut Vec&lt;PositionComponent&gt; {
+    self.positions.borrow_mut().as_mut()
+}
+
+pub fn fetch_velocities_ref(&amp;self) -&gt; &amp;Vec&lt;VelocityComponent&gt; {
+    self.velocities.borrow().as_ref()
+}
+</code></pre>
+<pre><code>error[E0515]: cannot return value referencing temporary value
+  --&gt; src\component_storage.rs
+ |
+ |         self.positions.borrow_mut().as_mut()
+ |         ---------------------------^^^^^^^^^
+ |         |
+ |         returns a value referencing data owned by the current function
+ |         temporary value created here
+
+error[E0515]: cannot return value referencing temporary value
+  --&gt; src\component_storage.rs
+ |
+ |         self.velocities.borrow().as_ref()
+ |         ------------------------^^^^^^^^^
+ |         |
+ |         returns a value referencing data owned by the current function
+ |         temporary value created here
+</code></pre>
+<p>The wrapped <code>Ref</code> and <code>RefMut</code> need to be alive and in scope in order to use the wrapped references. Here, the wrappers are dropped as the method ends, causing the returned references to point to potentially inaccessible data. This is a no-go, so just return the wrappers.</p>
+<p>Also, I almost forgot, the most important thing: In the <code>fetch_mut_positions</code> now takes the <code>&amp;self</code> as immutable reference!</p>
+<p>Now, we add the <code>as_mut</code> and <code>as_ref</code> calls to our dispatcher:</p>
+<pre><code class="language-rust noplaypen">self.apply_velocity.tick((
+    storage.fetch_mut_positions().as_mut(),
+    storage.fetch_ref_velocities().as_ref(),
+));
+</code></pre>
+<p>Our investigation allowed us to resolve issues around interrior mutability before taking on the more complex concepts. Sadly, we only have methods for getting positions and velocities so we still need to figure out how to select the correct vector based on type.</p>
+<h3><a class="header" href="#dynamic-typing" id="dynamic-typing">Dynamic typing</a></h3>
+<p>What we are trying to accomplish is essentially dynamic, runtime typing. More sacrifices to compile-time safety-nets, yay!</p>
+<p>As showcased at the start of this part, we are going to implement something like:</p>
+<pre><code class="language-rust noplaypen">pub fn fetch_mut&lt;C&gt;(&amp;self) -&gt; RefMut&lt;Vec&lt;C&gt;&gt; {
+    // ...
+}
+
+pub fn fetch_ref&lt;C&gt;(&amp;self) -&gt; Ref&lt;Vec&lt;C&gt;&gt; {
+    // ...
+}
+</code></pre>
+<p>Now, how on earth can we take the type <code>C</code> and convince the compiler to believe it is, for example, <code>PositionComponent</code>. Or on the other hand, how can we figure out ourselves that the <code>C</code> is some of our component types?</p>
+<p>Again, standard library provides us with some useful utilities. This time, the <code>Any</code>-trait and <code>TypeId</code> type. Compiler assigns each type an unique ID, the <code>TypeId</code> is essentially this identifier, thus, we can do comparisons like:</p>
+<pre><code class="language-rust noplaypen">let component_type_id = TypeId::of::&lt;C&gt;();
+
+if component_type_id == TypeId::of::&lt;PositionComponent&gt;() {
+    do_something();
+}
+</code></pre>
+<p>Here, we call the <code>TypeId::of()</code> associated function, providing an explicit generic parameter. This is so-called <em>turbofish</em>-syntax <em>(The <code>::&lt;&gt;</code> looks a bit like a speeding fish)</em>.</p>
+<p>Great! The requirement for being able to use the <code>TypeId::of</code> is that the type parameter must implement the <code>Any</code> trait, thus, we add a trait bound on the type parameter:</p>
+<pre><code class="language-rust noplaypen">pub fn fetch_mut&lt;C&gt;(&amp;self) -&gt; RefMut&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    // ...
+}
+</code></pre>
+<p>Our <code>fetch_mut</code> and <code>fetch_ref</code> are very similar in implementation. We can write both as:</p>
+<pre><code class="language-rust noplaypen">pub fn fetch_mut&lt;C&gt;(&amp;self) -&gt; RefMut&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    self.fetch_component_storage::&lt;C&gt;()
+        .borrow_mut()
+}
+
+pub fn fetch_ref&lt;C&gt;(&amp;self) -&gt; Ref&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    self.fetch_component_storage::&lt;C&gt;()
+        .borrow()
+}
+</code></pre>
+<p>Both use magical <code>self.fetch_component_storage::&lt;C&gt;()</code> utility method, which returns us a <code>RefCell</code> which we then borrow either mutably or immutably.</p>
+<p>The only thing left to implement is the actual <code>fetch_component_storage</code>, for getting the appropriate <code>RefCell</code>. Now, how could we resolve <code>C</code> or more accurately <code>TypeId::of::&lt;C&gt;()</code> to a <code>RefCell&lt;Vec&lt;C&gt;&gt;</code>? </p>
+<p>For now, as our component vectors are in individual struct fields, we are going full-retard here. Just use <code>if-elseif</code> for now and start looking into actual generic component storage later on.</p>
+<pre><code class="language-rust noplaypen">fn fetch_component_storage&lt;C&gt;(&amp;self) -&gt; &amp;RefCell&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    let component_type_id = TypeId::of::&lt;C&gt;();
+    let storage =
+        if component_type_id == TypeId::of::&lt;PositionComponent&gt;() {
+            // return positions
+        } else if component_type_id == TypeId::of::&lt;VelocityComponent&gt;() {
+            // return velocities
+        } else if component_type_id == TypeId::of::&lt;AccelerationComponent&gt;() {
+            // return accelerations
+        } else if component_type_id == TypeId::of::&lt;FrictionComponent&gt;() {
+            // return frictions
+        } else {
+            panic!(&quot;Unknown component type!&quot;)
+        };
+
+    // Do something with `storage` and return it as `RefCell&lt;Vec&lt;C&gt;&gt;`
+}
+</code></pre>
+<p>Now, there is one slight issue, what is the type of <code>storage</code> here? Intuition is to just try something like</p>
+<pre><code class="language-rust noplaypen">if component_type_id == TypeId::of::&lt;PositionComponent&gt;() {
+    &amp;self.positions
+} else if component_type_id == TypeId::of::&lt;VelocityComponent&gt;() {
+    &amp;self.velocities
+} // ...
+</code></pre>
+<p>...and rely on the compiler to figure out itself what we are trying to do. But it cannot, it's not smart enough for that. Instead, we are going to use information we have but the compiler does not understand.</p>
+<p>Note that:</p>
+<ol>
+<li>If the <code>if</code> expression passes, we know for sure that the component type in question and <code>C</code> are actually the same type <em>(If type IDs match, then the two types must be the exact same type)</em></li>
+<li>We are returning <em>references</em> to the vectors, not vectors themselves.</li>
+</ol>
+<p>Now, how are these two points useful? The first one means that if we end up returning a component vector from the if-expression, we know for sure that the returned vector is of type <code>Vec&lt;C&gt;</code>. The compiler does not know that, but we can make use of that information anyway. The second point allows us to do wacky stuff with the types. References themselves have constant size, known at compile time, regardless of what type of data they point to. Thus, we can practically store reference to any type of object in a single variable.</p>
+<p>In order to utilize either of the observations, we are going to need the <code>Any</code> trait. Luckily, almost everything implements the <code>Any</code> trait out of the box, so we can just:</p>
+<pre><code class="language-rust noplaypen">let storage =
+    if component_type_id == TypeId::of::&lt;PositionComponent&gt;() {
+        &amp;self.positions as &amp;dyn Any
+    } else if component_type_id == TypeId::of::&lt;VelocityComponent&gt;() {
+        &amp;self.velocities as &amp;dyn Any
+    } else if component_type_id == TypeId::of::&lt;AccelerationComponent&gt;() {
+        &amp;self.accelerations as &amp;dyn Any
+    } else if component_type_id == TypeId::of::&lt;FrictionComponent&gt;() {
+        &amp;self.frictions as &amp;dyn Any
+    } else {
+        panic!(&quot;Unknown component type!&quot;)
+    };
+</code></pre>
+<p>Now, the type of <code>storage</code> is a reference to <code>dyn Any</code>, that is:</p>
+<pre><code class="language-rust noplaypen">let storage: &amp;dyn Any = // ...
+</code></pre>
+<p>This seems confusing, why are we allowed to cast our component vectors to <code>dyn Any</code> and what on earth is <code>dyn Any</code> anyways!?</p>
+<h3><a class="header" href="#trait-objects" id="trait-objects">Trait objects</a></h3>
+<p>We are dealing with a concept called <em>trait objects</em>. Here <code>Any</code> is a trait, and <code>dyn Any</code> simply refers to <em>&quot;Some type, which implements <code>Any</code>&quot;</em>. As our component storages <em>(which have the type <code>RefCell&lt;Vec&lt;ComponentType&gt;&gt;</code>)</em> happen to be, well &quot;Any type&quot;, they implement the <code>Any</code> trait <em>(There are actually few rules on which types are considered <code>Any</code>, refer to <code>std::any</code> module documentation if interested)</em>. As refences have constant size, after we cast individual component storage references to <code>&amp;dyn Any</code>, they are actually all the same type.</p>
+<p>Then again, after getting the correct concrete storage type, we do not care about what type it <em>actually</em> is; we are going to return it as <code>&amp;RefCell&lt;Vec&lt;C&gt;&gt;</code> anyways!</p>
+<p>Another slight issue though, how do we convert the <code>&amp;dyn Any</code> to our return value? As long as we do not mess anything up with our if-elseif mess, we <em>do</em> know that the types are compatible. But how do we convince the compiler?</p>
+<p>Again, we rely on the <code>Any</code>-trait. The standard library implements a few useful utilities on the <code>dyn Any</code> trait object <em>(yes, trait objects actually can have associated functions and methods!)</em>.</p>
+<p>Enough blabber, here, now that <code>storage</code> is a <code>Any</code> trait-object, we can just <em>downcast</em> it to our desired type, as we already know that they should be compatible. The full implementation is then:</p>
+<pre><code class="language-rust noplaypen">pub fn fetch_mut&lt;C&gt;(&amp;self) -&gt; RefMut&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    self.fetch_component_storage::&lt;C&gt;()
+        .borrow_mut()
+}
+
+pub fn fetch_ref&lt;C&gt;(&amp;self) -&gt; Ref&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    self.fetch_component_storage::&lt;C&gt;()
+        .borrow()
+}
+
+fn fetch_component_storage&lt;C&gt;(&amp;self) -&gt; &amp;RefCell&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    let component_type_id = TypeId::of::&lt;C&gt;();
+    let storage =
+        if component_type_id == TypeId::of::&lt;PositionComponent&gt;() {
+            &amp;self.positions as &amp;dyn Any
+        } else if component_type_id == TypeId::of::&lt;VelocityComponent&gt;() {
+            &amp;self.velocities as &amp;dyn Any
+        } else if component_type_id == TypeId::of::&lt;AccelerationComponent&gt;() {
+            &amp;self.accelerations as &amp;dyn Any
+        } else if component_type_id == TypeId::of::&lt;FrictionComponent&gt;() {
+            &amp;self.frictions as &amp;dyn Any
+        } else {
+            panic!(&quot;Unknown component type!&quot;)
+        };
+
+    storage.downcast_ref::&lt;RefCell&lt;Vec&lt;C&gt;&gt;&gt;()
+           .expect(&quot;Downcasting storage RefCell failed!&quot;)
+}
+</code></pre>
+<p><em>The <code>.expect</code> at the end should actually be impossible to reach as unknown component types cause panic anyway.</em></p>
+<p>With this done, we can now remove the <code>pub</code> modifier from our component storage fields</p>
+<pre><code class="language-rust noplaypen">pub struct ComponentStorage {
+    positions: RefCell&lt;Vec&lt;PositionComponent&gt;&gt;,
+    velocities: RefCell&lt;Vec&lt;VelocityComponent&gt;&gt;,
+    accelerations: RefCell&lt;Vec&lt;AccelerationComponent&gt;&gt;,
+    frictions: RefCell&lt;Vec&lt;FrictionComponent&gt;&gt;,
+}
+</code></pre>
+<p>and proceed to change all our system tick calls to use the new methods in the dispatcher</p>
+<pre><code class="language-rust noplaypen">pub fn dispatch(&amp;self, storage: &amp;mut ComponentStorage) {
+    println!(&quot;State before tick:&quot;);
+    self.print_state.tick((
+        storage.fetch_ref::&lt;PositionComponent&gt;().as_ref(),
+        storage.fetch_ref::&lt;VelocityComponent&gt;().as_ref(),
+        storage.fetch_ref::&lt;AccelerationComponent&gt;().as_ref(),
+        storage.fetch_ref::&lt;FrictionComponent&gt;().as_ref(),
+    ));
+
+    self.apply_acceleration.tick((
+        storage.fetch_mut::&lt;VelocityComponent&gt;().as_mut(),
+        storage.fetch_ref::&lt;AccelerationComponent&gt;().as_ref(),
+    ));
+
+    self.apply_friction.tick((
+        storage.fetch_mut::&lt;VelocityComponent&gt;().as_mut(),
+        storage.fetch_ref::&lt;FrictionComponent&gt;().as_ref(),
+    ));
+
+    self.apply_velocity.tick((
+        storage.fetch_mut::&lt;PositionComponent&gt;().as_mut(),
+        storage.fetch_ref::&lt;VelocityComponent&gt;().as_ref(),
+    ));
+
+    println!(&quot;\nPositions after tick:&quot;);
+    self.print_positions.tick(
+        storage.fetch_ref::&lt;PositionComponent&gt;().as_ref()
+    );
+}
+</code></pre>
+<p>Sadly as we are mixing raw references and wrapped <code>Ref</code> and <code>RefMut</code> from <code>RefCell</code>, we need those ugly <code>as_ref</code> and <code>as_mut</code> calls everywhere. I don't see that as much of an issue for now though.</p>
+<h3><a class="header" href="#a-few-gotchas" id="a-few-gotchas">A few gotchas</a></h3>
+<p>We are doing relatively unsafe stuff in <code>fetch_mut</code>, <code>fetch_ref</code> and <code>fetch_component_storage</code> methods. First of all, <code>fetch_mut</code> and <code>fetch_ref</code> can fail in multitude of different situations, for example:</p>
+<pre><code class="language-rust noplaypen panics">let positions_ref = storage.fetch_ref::&lt;PositionComponent&gt;().as_ref();
+let positions_mut = storage.fetch_mut::&lt;PositionComponent&gt;().as_mut();
+//                          ^^^^^^^^^
+// The compiler does not complain, but we cannot bypass borrowing rules,
+// even when we are using `RefCells`. This panics at runtime.
+</code></pre>
+<p>The code panics on the second line as we are trying to fetch mutably while immutable borrow is still alive. Fetching multiple times mutably is valid, though:</p>
+<pre><code class="language-rust noplaypen">let positions_ref_a = storage.fetch_ref::&lt;PositionComponent&gt;().as_ref();
+let positions_ref_b = storage.fetch_ref::&lt;PositionComponent&gt;().as_ref();
+</code></pre>
+<p>The first example causes issues if we were to move the storage accesses to temporary variables:</p>
+<pre><code class="language-rust panics noplaypen">let mut velocities = storage.fetch_mut::&lt;VelocityComponent&gt;();
+let frictions = storage.fetch_ref::&lt;FrictionComponent&gt;();
+self.apply_friction.tick((
+    velocities.as_mut(),
+    frictions.as_ref(),
+));
+
+let mut positions = storage.fetch_mut::&lt;PositionComponent&gt;();
+let velocities = storage.fetch_ref::&lt;VelocityComponent&gt;(); // panics!
+self.apply_velocity.tick((
+    positions.as_mut(),
+    velocities.as_ref(),
+));
+</code></pre>
+<p>This example is a bit more interesting. Intuitively, the original velocities has already been exhausted as we are shadowing it with a new one anyway. But things do not work that way! The original <code>velocities</code> won't be dropped until it goes out of scope, in this case, that is at the same time as the new <code>velocities</code> we shadow the original with. This, obviously is not valid as the original is still borrowed while we try to borrow it again.</p>
+<p>We can fix this, however, and even without creating any new methods or anything stupid:</p>
+<pre><code class="language-rust noplaypen">{
+    let mut velocities = storage.fetch_mut::&lt;VelocityComponent&gt;();
+    let frictions = storage.fetch_ref::&lt;FrictionComponent&gt;();
+    self.apply_friction.tick((
+        velocities.as_mut(),
+        frictions.as_ref(),
+    ));
+} // &lt;-- `velocities` is dropped here
+
+let mut positions = storage.fetch_mut::&lt;PositionComponent&gt;();
+let velocities = storage.fetch_ref::&lt;VelocityComponent&gt;();
+self.apply_velocity.tick((
+    positions.as_mut(),
+    velocities.as_ref(),
+));
+</code></pre>
+<p>This is valid code and should compile just fine. We use a relatively common trick, which we can use when writing sequences like these where we do not want to extract things to their own methods but would like previous values to be dropped before starting work on next ones. We simply define a new scope to limit the lifetime of the storage references. Now, the second definition of <code>velocities</code> is not actually shadowing the original anymore, as the original has already gone out of scope and thus has been dropped!</p>
+<p>So, the takeaway here is that one must be careful with <code>storage.fetch_XXX</code> methods, as they can easily cause panics at runtime. I have not figured out how this could be done safely, or how I could get the compiler to complain about trying to simultaneously fetch the same component storage two times.</p>
+<p>Then onto the next topic; the <code>fetch_component_storage</code>. The trickery we do is luckily limited to the scope of a single method, thus its not <em>that</em> huge of an issue. However, I strongly dislike the approach we took here. We momentarily lose type-safety almost completely here. Yes, the application immediately crashes in case we manage to accidentally return wrong type of vector, but there is no compile-time guarantee that we have written code that is actually safe. I <em>might</em> invest some time in the future to create some <em>(at least a bit)</em> safer wrapper for doing this conversion, but that must wait for after we have finished with generalizing the storage.</p>
+<h2><a class="header" href="#what-next-6" id="what-next-6">What next?</a></h2>
+<p>Ok! We got a huge milestone out of the way here; we have API we can use to fetch arbitrary component types from our component storage. Yes, the storage currently only supports four different component types, but we are not far from being able to support any number of components. The dispatcher is getting messy, but we are not going to touch on that just yet.</p>
+<p>For the next part, we are going to focus on packing the individual component storage vectors to some collection so that we can truly support arbitrary component types. This requires some registration procedure for component types and a few changes to way our <code>fetch_component_storage</code> works, but should be quite simple change now that we have the framework laid down.</p>
+<p>The full source code can be found in branch <code>part-7</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-7">link</a>)</p>
 
                     </main>
 
