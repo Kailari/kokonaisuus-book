@@ -1,0 +1,977 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Arbitrary component types - Step by step towards Insanity</title>
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css">
+        <link href="https://fonts.googleapis.com/css?family=Source+Code+Pro:500" rel="stylesheet" type="text/css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+        <link rel="stylesheet" href="third-party/ferris.css">
+        
+
+        
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div id="sidebar-scrollbox" class="sidebar-scrollbox">
+                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li><li class="expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> macro_rules!</a></li><li class="expanded "><a href="chapter_5.html"><strong aria-hidden="true">5.</strong> The lifetime of 'a system</a></li><li class="expanded "><a href="chapter_6.html"><strong aria-hidden="true">6.</strong> Component TypeId</a></li><li class="expanded "><a href="chapter_7.html" class="active"><strong aria-hidden="true">7.</strong> Arbitrary component types</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar" class="menu-bar">
+                    <div id="menu-bar-sticky-container">
+                        <div class="left-buttons">
+                            <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                                <i class="fa fa-bars"></i>
+                            </button>
+                            <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                                <i class="fa fa-paint-brush"></i>
+                            </button>
+                            <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                                <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                                <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                            </ul>
+                            
+                            <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                                <i class="fa fa-search"></i>
+                            </button>
+                            
+                        </div>
+
+                        <h1 class="menu-title">Step by step towards Insanity</h1>
+
+                        <div class="right-buttons">
+                            <a href="print.html" title="Print this book" aria-label="Print this book">
+                                <i id="print-button" class="fa fa-print"></i>
+                            </a>
+                            
+                        </div>
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#arbitrary-component-types" id="arbitrary-component-types">Arbitrary Component Types</a></h1>
+<p><em>&quot;Component storage should not be concerned of the types of the components stored&quot;.</em></p>
+<h3><a class="header" href="#topics" id="topics">Topics</a></h3>
+<ul>
+<li><code>HashMap</code></li>
+<li><code>Box&lt;T&gt;</code></li>
+<li><code>Box&lt;dyn Trait&gt;</code></li>
+<li>Match guards</li>
+</ul>
+<h2><a class="header" href="#what-are-we-trying-to-do" id="what-are-we-trying-to-do">What are we trying to do?</a></h2>
+<p>Hard-coding the component types to the component storage is not particularly great long-term approach. What we would like instead, is to be able to register arbitrary component types to our storage without having to worry type definitions or structs exploding out of control.</p>
+<p>When we take a look at our current implementation of the component storage, it is quite evident that there is a common pattern among our component storage vectors.</p>
+<pre><code class="language-rust noplaypen">components: RefCell&lt;Vec&lt;ComponentType&gt;&gt;
+</code></pre>
+<p>What we are trying to achieve is something more like</p>
+<pre><code class="language-rust noplaypen">components: Map&lt;TypeId, RefCell&lt;Vec&lt;ComponentType&gt;&gt;&gt;
+</code></pre>
+<p>Last, we suffer from bit of a feature creep and end up re-writing a lot of stuff to achieve optional components on per-entity basis <em>(all entities no longer must neccessarily have all components)</em>.</p>
+<h3><a class="header" href="#whoops" id="whoops">Whoops!</a></h3>
+<p>There are some interesting details about how Rust handles memory and how that affects the performance of our current component storage implementation. Currently, our components are all stored in vectors, which in turn are wrapped to a <code>RefCell</code>. The cell is there just to allow runtime borrow-checking and does not affect storage much. However, the vector part has some additional things I'd like to point out.</p>
+<p>Note that for the rest of this chapter, I'm going to assume that you have at least a vague understanding of stack and the heap. For a good TL;DR on the topic, refer to relevant parts in the chapter <em>4.1. What is Ownership</em> in <a href="https://doc.rust-lang.org/stable/book/ch04-01-what-is-ownership.html#the-stack-and-the-heap">the book</a>.</p>
+<p>Let's get this out of the way; for the longest time, I thought that <code>Vec</code> was stack-allocated, unless it is explicitly allocated on the heap. I've learnt that this is not the case. Elements of a <code>Vec</code> are indeed allocated on the heap.</p>
+<p>This is not bad news though! I have been worried if the component storage could cause stack overflows with too many components, but due to the components actually residing on the heap, that is not an issue. Also, I've been avoiding boxing things to avoid doing costly heap allocations, but now that they are in there anyways, I'm not worried anymore about having to use boxes and trait objects. <em>(The allocations themselves only happen at initialization, when the storages are first created, thus mitigating some of the downsides of having to use heap)</em>.</p>
+<h2><a class="header" href="#using-hashmap-for-component-types" id="using-hashmap-for-component-types">Using <code>HashMap</code> for component types</a></h2>
+<p>Like many other languages, the Rust standard library comes with plethora of useful common collections. Here, we want to store a map of <code>TypeId</code>s to component storage vectors, so a standard <code>HashMap</code> is quite straightforward choice <em>(For starters, at least. Performace can be improved Later™)</em>.</p>
+<p>There is a slight issue, though. Our storage vectors, have very distinct types. Each component vector needs to have known component type when it is first allocated. That is</p>
+<pre><code class="language-rust noplaypen">// Previously, this was just fine:
+struct ComponentStorage {
+    as: RefCell&lt;Vec&lt;ComponentA&gt;&gt;,
+    bs: RefCell&lt;Vec&lt;ComponentB&gt;&gt;
+}
+
+// Now:
+struct ComponentStorage {
+    components: HashMap&lt;TypeId, RefCell&lt;Vec&lt;???&gt;&gt;&gt;
+    //            What can we specify here? ^^^
+}
+</code></pre>
+<p>The first option that comes to mind is to use a trait object. Trait objects do not have known size at compile-time, so we need to <em>box</em> them <em>(non-sized types must be allocated on the heap)</em>. I love the way how Rust handles this; we just wrap the thing in a <code>Box&lt;T&gt;</code>. Here, we are lazy and just use <code>Any</code> trait to allow anything to be used as a component:</p>
+<pre><code class="language-rust noplaypen">components: HashMap&lt;TypeId, RefCell&lt;Vec&lt;Box&lt;dyn Any&gt;&gt;&gt;&gt;
+</code></pre>
+<p>However, there is a slight issue to this. Or rather, there is a rather huge glaring issue to this. We are storing boxes in a vector, which by itself is not an offense of any sort, but in this context it becomes quite problematic.</p>
+<p>Let's think a bit how this could look like in memory. We have a <code>Vec</code> which holds a pointer to a block of memory containing... Oh wait! It contains <code>Box&lt;dyn Any&gt;</code>, which means the vec contains <em>pointers</em> to the components, not the components themselves! Unless compiler does something <em>really</em> smart and optimizes this away, we have an additional layer of indirection here and our components might potentially be scattered all around in the memory! Uh oh, this is no good.</p>
+<p>Let's think this for a bit; what are we trying to do? Trait objects are great for when we are trying to store something with varying sizes. Here, however, our vectors always contain entries of equal sizes, but the vectors themselves are of different sizes. Thus it makes no sense to pack the individual components to boxes. We would like to store vectors themselves as &quot;trait objects&quot; as the vectors are at the layer at which we have variable sizes!</p>
+<p>This is where things get ugly; I have yet to find a &quot;clean&quot; approach to this. What we are trying to do is something like:</p>
+<pre><code class="language-rust noplaypen does_not_compile">// ERROR: dyn Any does not have known size at compile time!
+components: HashMap&lt;TypeId, RefCell&lt;Box&lt;Vec&lt;dyn Any&gt;&gt;&gt;&gt;
+
+// or
+
+// ERROR: dyn Any does not have known size at compile time!
+components: HashMap&lt;TypeId, Box&lt;RefCell&lt;Vec&lt;dyn Any&gt;&gt;&gt;&gt;
+</code></pre>
+<p>The problem here is that we do not have any way of telling the compiler what we are trying to do. I'm fairly confident this could be worked around with a custom map or vector type, but I <em>really</em> don't feel like spending time on figuring that out just yet.</p>
+<p><em>(I spent a bit more time than I'm willing to admit to trying to get the type signatures nicer but I could not figure out a safe way of doing this. I'll likely revisit this later when I figure something out)</em></p>
+<p>First, from the two options in the snippet above, the latter is the one we are actually going to use. Why? When the box is the outer wrapper type, we get to do downcasting <em>before</em> we have to borrow the underlying vector. In my experiments, this simplified the implementation <em>a lot</em>, but oh boy, the cost we have to pay. These more or less required compromises simplify our map's type signature down to:</p>
+<pre><code class="language-rust noplaypen">components: HashMap&lt;TypeId, Box&lt;dyn Any&gt;&gt;
+</code></pre>
+<p>...which does not tell us <em>darn thing</em> about what the map contains. However, this gives us all the freedom in the world to cast the contents of that box to anything we'd like <em>(Although if we try to cast to anything else than the exact correct type, the program panics)</em>.</p>
+<p>Now, with that in mind, let's add a constructor and a bit dumb version of component initialization. Our component storage becomes:</p>
+<pre><code class="language-rust noplaypen">pub struct ComponentStorage {
+    components: HashMap&lt;TypeId, Box&lt;dyn Any&gt;&gt;,
+}
+
+impl ComponentStorage {
+    pub fn new() -&gt; ComponentStorage {
+        ComponentStorage { components: HashMap::new() }
+    }
+
+    pub fn register_component_type&lt;C&gt;(&amp;mut self, components: Vec&lt;C&gt;)
+        where C: Any
+    {
+        self.components.insert(TypeId::of::&lt;C&gt;(), Box::new(RefCell::new(components)));
+    }
+
+    // ... (fetching etc.)
+}
+</code></pre>
+<p>We use <code>HashMap::new</code> to allocate a new map in the constructor and the <code>HashMap::insert</code> to put items to it. The keys are unsurprisingly generated with <code>TypeId::of</code>. Additional thing to note is that we do the boxing and wrapping to a <code>RefCell</code> here, too.</p>
+<p>From here on, fetching the component storage is quite easy to implement. The <code>HashMap</code> provides <code>get</code>-method for fetching <code>Option&lt;T&gt;</code>. The <code>fetch_component_storage</code> then becomes:</p>
+<pre><code class="language-rust noplaypen">fn fetch_component_storage&lt;C&gt;(&amp;self) -&gt; &amp;RefCell&lt;Vec&lt;C&gt;&gt;
+    where C: Any
+{
+    let component_type_id = TypeId::of::&lt;C&gt;();
+    let storage = self.components.get(&amp;component_type_id)
+                      .unwrap_or_else(|| panic!(&quot;Unregistered component type: {}&quot;,
+                                                std::any::type_name::&lt;C&gt;()));
+
+    storage.downcast_ref::&lt;RefCell&lt;Vec&lt;C&gt;&gt;&gt;()
+           .expect(&quot;Downcasting storage RefCell failed!&quot;)
+}
+</code></pre>
+<p>Wait a minute! The only actual change is how we fetch the <code>storage</code>!? How can this be, we just added additional layer of indirection, the <code>Box</code> around our storage vectors?</p>
+<p>The trick is that the <code>downcast_ref</code> we are calling here is actually different from what we were calling previously. If you inspect the code carefully, the type of <code>storage</code> has actually changed. It used to be <code>&amp;dyn Any</code>, but now it is <code>Box&lt;dyn Any&gt;</code>.</p>
+<p>The thing is, both of these have their own implementations of <code>downcast_ref</code>, doing a very similar thing, but in case of the box, hiding the additional indirection involved. In practice, the cost of this <em>&quot;hidden indirection&quot;</em> here is negligible, as it is present only once when storages are being fetched. Therefore, the way how <code>Box&lt;dyn Any&gt;</code> essentially allows us to cast pointers to other types is just very convenient here.</p>
+<h3><a class="header" href="#is-this-safe" id="is-this-safe">Is this safe?</a></h3>
+<p>Being able to downcast pointers is convenient. However, getting the casts right the first time was not before a lot of trial-and-error. There is no type safety here; should the storage types ever change or other types of storages be allowed, there is no guarantee these downcasts continue being valid. Most importantly, the compiler does not complain if anything is wrong.</p>
+<p>That being said, only place we write to the map is in the component type registration. As long as we make sure the type signatures are correct and correspond to the <code>TypeId</code>s there, the downcasts in <code>fetch_component_storage</code> are guaranteed to be valid. The type tokens make sure of that.</p>
+<p>So, in my personal opinion, as internal implementation detail, this is fine. Yes, it is mighty ugly and smells worse than what I do after a week long hike, but it works and there should not be that much reasons for fiddling with registration and fetching in ways that could break it in the near future. I do not love it, but I'll leave it at that for now.</p>
+<h2><a class="header" href="#registering-component-types" id="registering-component-types">Registering component types</a></h2>
+<p>Only thing left to do is to actually register the component types. Our <code>main</code> becomes:</p>
+<pre><code class="language-rust noplaypen">pub fn main() {
+    let mut storage = ComponentStorage::new();
+    let positions = vec![
+        // ...
+<span class="boring">        PositionComponent::new(0.0, 0.0),
+</span><span class="boring">        PositionComponent::new(-42.0, -42.0),
+</span><span class="boring">        PositionComponent::new(234.0, 123.0),
+</span><span class="boring">        PositionComponent::new(6.0, 9.0),
+</span>    ];
+    let velocities = vec![
+        // ...
+<span class="boring">        VelocityComponent::new(40.0, 10.0),
+</span><span class="boring">        VelocityComponent::new(30.0, 20.0),
+</span><span class="boring">        VelocityComponent::new(20.0, 30.0),
+</span><span class="boring">        VelocityComponent::new(10.0, 40.0),
+</span>    ];
+    let frictions = vec![
+        // ...
+<span class="boring">        FrictionComponent::new(1.0),
+</span><span class="boring">        FrictionComponent::new(2.0),
+</span><span class="boring">        FrictionComponent::new(3.0),
+</span><span class="boring">        FrictionComponent::new(4.0),
+</span>    ];
+    let accelerations = vec![
+        // ...
+<span class="boring">        AccelerationComponent::new(2.0, 16.0),
+</span><span class="boring">        AccelerationComponent::new(4.0, 2.0),
+</span><span class="boring">        AccelerationComponent::new(8.0, 4.0),
+</span><span class="boring">        AccelerationComponent::new(16.0, 8.0),
+</span>    ];
+
+    storage.register_component_type(positions);
+    storage.register_component_type(velocities);
+    storage.register_component_type(accelerations);
+    storage.register_component_type(frictions);
+
+    let dispatcher = Dispatcher::new();
+    dispatcher.dispatch(&amp;mut storage);
+}
+</code></pre>
+<h2><a class="header" href="#arguably-nicer-component-intialization" id="arguably-nicer-component-intialization">(Arguably) Nicer component intialization</a></h2>
+<p>That was the first draft. Now that we can register any arbitrary component type we'd like it becomes quite evident that having to do it for each and every <em>&quot;entity&quot;</em> is quite a lot of work! Also, I do not like the way how <code>main</code> actually allocates the underlying memory when it initializes the component storage vectors as this strongly couples the component storage memory layout with our <code>main</code> method.</p>
+<p>So, next we are going to move those vectors inside the component storage and almost by accident, we are getting closer to having actual concrete representation of <em>&quot;entities&quot;</em> in our ECS.</p>
+<p>Plan is to allow initializing the component storage with capacity of <code>n</code> components per type. Effectively this means that the storage is for <code>n</code> entities.</p>
+<p>For this, we add another field for the <code>ComponentStorage</code> struct:</p>
+<pre><code class="language-rust noplaypen">struct ComponentStorage {
+<span class="boring">    components: HashMap&lt;TypeId, Box&lt;dyn Any&gt;&gt;,
+</span>    // ...
+    capacity: usize,
+}
+
+impl ComponentStorage {
+    pub fn new(capacity: usize) -&gt; ComponentStorage {
+        ComponentStorage {
+            capacity,
+            components: HashMap::new()
+        }
+    }
+    // ...
+}
+</code></pre>
+<p>Next, let's change the signature of <code>register_component_type</code> a bit:</p>
+<pre><code class="language-rust noplaypen">pub fn register_component_type&lt;C&gt;(&amp;mut self, default: C)
+        where C: Any
+</code></pre>
+<p>Instead of getting the component vector as parameter, we prepare to allocate it in the storage. For this, we need a default component to be used as the default value for entities which we do not otherwise specify the component values.</p>
+<p>The implementation is straightforward, although I'm bad with Rust's vectors so this is a bit messy:</p>
+<pre><code class="language-rust noplaypen">pub fn register_component_type&lt;C&gt;(&amp;mut self, default: C)
+    where C: Any + Copy
+{
+    let mut storage_vector = Vec::&lt;C&gt;::with_capacity(self.capacity);
+    storage_vector.resize_with(self.capacity, || default);
+    self.components.insert(TypeId::of::&lt;C&gt;(), Box::new(RefCell::new(storage_vector)));
+}
+</code></pre>
+<p>There really isn't that much to it. We initialize a new component vector with a capacity and use <code>resize_with</code> to fill it with the default component. Then, use the old one-liner to box it, wrap it to a ref cell and then insert it with appropriate key to the map.</p>
+<p>There is also an additional <code>Copy</code> trait bound on the component types. This is required to be able to copy the default value to all vector cells. This bound then requires that we add <code>#[derive(Copy,Clone)]</code> to all our component types. I'm not sure if having components <code>Copy</code> is a good idea or not <em>(Currently I do not have them copyable to avoid accidental copies)</em>, but for this step it is required. <em>(Just as a heads up, I have later on removed the derives after I implemented optional components)</em></p>
+<p>Component type registration in <code>main.rs</code> then becomes:</p>
+<pre><code class="language-rust noplaypen">let mut storage = ComponentStorage::new(4);
+storage.register_component_type(PositionComponent::new(0.0, 0.0));
+storage.register_component_type(VelocityComponent::new(0.0, 0.0));
+storage.register_component_type(AccelerationComponent::new(0.0, 0.0));
+storage.register_component_type(FrictionComponent::new(0.0));
+</code></pre>
+<p>You might have noticed that we now have no way of adjusting component properties without systems. Let's change that; in component storage, we add:</p>
+<pre><code class="language-rust noplaypen">pub fn add_to_entity&lt;C&gt;(&amp;self, entity_id: usize, component: C)
+    where C: Any
+{
+    let mut storage = self.fetch_component_storage::&lt;C&gt;()
+                          .borrow_mut();
+    storage[entity_id] = component;
+}
+</code></pre>
+<p>Here, we use <code>fetch_component_storage</code> to fetch the storage cell and then just blindly change the component for the given entity id. This is the first time we have actual concrete entity IDs in use, neat!</p>
+<p>Now, we can add initial values for our components:</p>
+<pre><code class="language-rust noplaypen">pub fn main() {
+<span class="boring">    let mut storage = ComponentStorage::new(4);
+</span><span class="boring">    storage.register_component_type(PositionComponent::new(0.0, 0.0));
+</span><span class="boring">    storage.register_component_type(VelocityComponent::new(0.0, 0.0));
+</span><span class="boring">    storage.register_component_type(AccelerationComponent::new(0.0, 0.0));
+</span><span class="boring">    storage.register_component_type(FrictionComponent::new(0.0));
+</span>    // ...
+
+    storage.add_to_entity(0, PositionComponent::new(0.0, 0.0));
+    storage.add_to_entity(1, PositionComponent::new(-42.0, -42.0));
+    storage.add_to_entity(2, PositionComponent::new(234.0, 123.0));
+    storage.add_to_entity(3, PositionComponent::new(6.0, 9.0));
+
+    // ...
+<span class="boring">
+</span><span class="boring">    storage.add_to_entity(0, VelocityComponent::new(40.0, 10.0));
+</span><span class="boring">    storage.add_to_entity(1, VelocityComponent::new(30.0, 20.0));
+</span><span class="boring">    storage.add_to_entity(2, VelocityComponent::new(20.0, 30.0));
+</span><span class="boring">    storage.add_to_entity(3, VelocityComponent::new(10.0, 40.0));
+</span><span class="boring">
+</span><span class="boring">    storage.add_to_entity(0, FrictionComponent::new(1.0));
+</span><span class="boring">    storage.add_to_entity(1, FrictionComponent::new(2.0));
+</span><span class="boring">    storage.add_to_entity(2, FrictionComponent::new(3.0));
+</span><span class="boring">    storage.add_to_entity(3, FrictionComponent::new(4.0));
+</span><span class="boring">
+</span><span class="boring">    storage.add_to_entity(0, AccelerationComponent::new(2.0, 16.0));
+</span><span class="boring">    storage.add_to_entity(1, AccelerationComponent::new(4.0, 2.0));
+</span><span class="boring">    storage.add_to_entity(2, AccelerationComponent::new(8.0, 4.0));
+</span><span class="boring">    storage.add_to_entity(3, AccelerationComponent::new(16.0, 8.0));
+</span><span class="boring">
+</span><span class="boring">    let dispatcher = Dispatcher::new();
+</span><span class="boring">    dispatcher.dispatch(&amp;mut storage);
+</span>}
+</code></pre>
+<p>This by itself did not achieve very much for us. The most important part is that the <code>ComponentStorage</code> is now actually completely in control of how the components are stored. This allows us to implement the next feature.</p>
+<h2><a class="header" href="#optional-components" id="optional-components">Optional components</a></h2>
+<p>Issue with our current storage model is that all entities currently have all components. Next we are going to change our storage vectors from</p>
+<pre><code class="language-rust noplaypen">storage: Box&lt;RefCell&lt;Vec&lt;ComponentType&gt;&gt;&gt;
+</code></pre>
+<p>to</p>
+<pre><code class="language-rust noplaypen">storage: Box&lt;RefCell&lt;Vec&lt;Option&lt;ComponentType&gt;&gt;&gt;&gt;
+</code></pre>
+<p>Ok. Right. Does not look too hard, huh? Just add the optionals and figure out how to iterate the options, <em>can't be that hard</em>.</p>
+<p>Heads up: we are going to more or less rewrite everything so brace yourselves.</p>
+<h3><a class="header" href="#quick-cleanups" id="quick-cleanups">Quick cleanups</a></h3>
+<p>I finally got fed up with passing raw <code>Ref</code>s and <code>RefMut</code>s around. Also defining the read/write requirements of a system with raw references was a bit ugly. I wrote wrappers for those references, like this:</p>
+<pre><code class="language-rust noplaypen">pub struct Write&lt;'a, C&gt; {
+    storage: RefMut&lt;'a, Vec&lt;C&gt;&gt;,
+}
+
+pub struct Read&lt;'a, C&gt; {
+    storage: Ref&lt;'a, Vec&lt;C&gt;&gt;,
+}
+</code></pre>
+<p>I then added <code>From&lt;T&gt;</code> implementations for them to convert the <code>RefCell</code> reference wrappers to these our own wrapper-wrappers:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a, C&gt; From&lt;RefMut&lt;'a, Vec&lt;C&gt;&gt;&gt; for Write&lt;'a, C&gt; {
+    fn from(source: RefMut&lt;'a, Vec&lt;C&gt;&gt;) -&gt; Self {
+        Write { storage: source }
+    }
+}
+
+impl&lt;'a, C&gt; From&lt;Ref&lt;'a, Vec&lt;C&gt;&gt;&gt; for Read&lt;'a, C&gt; {
+    fn from(source: Ref&lt;'a, Vec&lt;C&gt;&gt;) -&gt; Self {
+        Read { storage: source }
+    }
+}
+</code></pre>
+<p>Now, we get to the good bits, I added a methods to convert the darn things into iterators:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a, C&gt; Write&lt;'a, C&gt; {
+    pub fn iterate(&amp;mut self) -&gt; IterMut&lt;C&gt; {
+        self.storage.iter_mut()
+    }
+}
+
+impl&lt;'a, C&gt; Read&lt;'a, C&gt; {
+    pub fn iterate(&amp;self) -&gt; Iter&lt;C&gt; {
+        self.storage.iter()
+    }
+}
+</code></pre>
+<p>Then, I changed <code>fetch_ref</code> and <code>fetch_mut</code> to return these</p>
+<pre><code class="language-rust noplaypen">pub fn fetch_mut&lt;C&gt;(&amp;self) -&gt; Write&lt;C&gt;
+    where C: Any
+{
+    Write::from(self.fetch_component_storage::&lt;C&gt;().borrow_mut())
+}
+
+pub fn fetch_ref&lt;C&gt;(&amp;self) -&gt; Read&lt;C&gt;
+    where C: Any
+{
+    Read::from(self.fetch_component_storage::&lt;C&gt;().borrow())
+}
+</code></pre>
+<p>After which we need to tweak system <code>InputData</code> and dispatcher a bit. For example, for <code>ApplyAccelerationSystem</code> the changes are:</p>
+<pre><code class="language-rust noplaypen">// Systems:
+type InputData = (Write&lt;'a, VelocityComponent&gt;,
+                  Read&lt;'a, AccelerationComponent&gt;);
+
+fn tick(&amp;self, (mut velocities, accelerations): Self::InputData) {
+    let vel_iter = velocities.iterate();
+    let acc_iter = accelerations.iterate();
+
+    // ...
+}
+
+// Dispatcher:
+self.apply_acceleration.tick((
+    storage.fetch_mut::&lt;VelocityComponent&gt;(), // removed `as_mut`
+    storage.fetch_ref::&lt;AccelerationComponent&gt;(), // removed `as_ref`
+));
+</code></pre>
+<p>With these done, the component storage implementation details are now hidden from dispatcher and the systems, behind an additional layer of abstraction. We also got rid of the ugly <code>as_mut</code> and <code>as_ref</code> calls, which is neat! This should come in handy later on if we want to do something more special with our system inputs.</p>
+<h3><a class="header" href="#rewriting-everything" id="rewriting-everything">Rewriting everything</a></h3>
+<p>Now with system inputs cleaned up, the first step to getting data as optionals is changing the storage type in the first place. This step is actually quite simple, as we create all our storage vectors in <code>register_component_type</code>:</p>
+<pre><code class="language-rust noplaypen">pub fn register_component_type&lt;C&gt;(&amp;mut self)
+    where C: Any
+{
+    let mut storage_vector = Vec::&lt;Option&lt;C&gt;&gt;::with_capacity(self.capacity);
+    storage_vector.resize_with(self.capacity, || None);
+    self.components.insert(TypeId::of::&lt;C&gt;(), Box::new(RefCell::new(storage_vector)));
+}
+</code></pre>
+<p>We've got rid of the default parameter and the <code>Copy</code> trait bound on component type. Also, the component type in vector initialization is now wrapped to <code>Option</code> and the default component is substituted with <code>Option::None</code>. Apart from those, the initialization remains surprisingly untouched.</p>
+<p>Now that we have the logic in place so that there is concept of entities either having or not having a component, I would like add an additional layer of security, so that we cannot add component to an entity which already has one. The <code>add_to_entity</code> method has for now just blindly overridden the previous component, not caring if it was the default component or not. Let's change this a bit.</p>
+<p>We get the storage, just like before, with the <code>fetch_component_storage</code> and borrow the cell. Vectors provide a <code>fn get(&amp;self, index) -&gt; Option&lt;T&gt;</code> which we can use to try to fetch components with the given entity ID. As we initialize the component vectors with initial capacity and all elements as <code>None</code>, we should be fine as long as we pass in entity IDs which are <code>entity_id &lt; capacity</code>.</p>
+<p>Note that the type of the vector is now <code>Vec&lt;Option&lt;C&gt;&gt;</code>. Due to that, the aforementioned validation now requires a bit more complex pattern matching as <code>get</code> actually returns a <code>Option&lt;Option&lt;C&gt;&gt;</code>. Luckily, pattern matching in Rust is quite powerful and we can just write</p>
+<pre><code class="language-rust noplaypen">pub fn add_to_entity&lt;C&gt;(&amp;self, entity_id: usize, component: C)
+    where C: Any
+{
+    let mut storage = self.fetch_component_storage::&lt;C&gt;().borrow_mut();
+
+    // Nested enums in pattern matching, yay!
+    if let Some(Some(_)) = storage.get(entity_id) {
+        panic!(&quot;Tried adding component {} to entity_id={}, but it already has one!&quot;,
+                std::any::type_name::&lt;C&gt;(),
+                entity_id);
+    }
+
+    // ...
+</code></pre>
+<p>We are only interested in the fact that the entity should <em>NOT</em> have a component when we are adding one, so the actual component is substituted with <code>_</code> in the pattern as we are not going to use it for anything.</p>
+<p>Then, lastly, when adding the component, we need to wrap it to <code>Option::Some</code></p>
+<pre><code class="language-rust noplaypen">    // ...
+
+    storage[entity_id] = Some(component);
+}
+</code></pre>
+<p>Now everything is broken, first of all, <code>fetch_component_storage</code> still returns non-option vectors. Let's fix that next.</p>
+<p>Only actual changes required are the return type and the type used in the downcast:</p>
+<pre><code class="language-rust noplaypen">// Method signature:
+fn fetch_component_storage&lt;C&gt;(&amp;self) -&gt; &amp;RefCell&lt;Vec&lt;Option&lt;C&gt;&gt;&gt;
+    where C: Any
+{
+    // ...
+
+    // Downcast at the end:
+    storage.downcast_ref::&lt;RefCell&lt;Vec&lt;Option&lt;C&gt;&gt;&gt;&gt;().unwrap()
+}
+</code></pre>
+<p>After this, <code>add_to_entity</code> no longer has gazillion errors. However, we have now broken <code>fetch_ref</code> and <code>fetch_mut</code> as our <code>Read</code> and <code>Write</code> wrappers do not understand that the components should be options. Let's look into those next. There are quite a few places where we need to change the types to use options instead of raw components:</p>
+<p>First, the structs themselves:</p>
+<pre><code class="language-rust noplaypen">pub struct Write&lt;'a, C&gt; {
+    storage: RefMut&lt;'a, Vec&lt;Option&lt;C&gt;&gt;&gt;,
+}
+
+pub struct Read&lt;'a, C&gt; {
+    storage: Ref&lt;'a, Vec&lt;Option&lt;C&gt;&gt;&gt;,
+}
+</code></pre>
+<p>Second, the <code>From</code> implementations:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a, C&gt; From&lt;RefMut&lt;'a, Vec&lt;Option&lt;C&gt;&gt;&gt;&gt; for Write&lt;'a, C&gt; {
+    fn from(source: RefMut&lt;'a, Vec&lt;Option&lt;C&gt;&gt;&gt;) -&gt; Self {
+        Write { storage: source }
+    }
+}
+
+impl&lt;'a, C&gt; From&lt;Ref&lt;'a, Vec&lt;Option&lt;C&gt;&gt;&gt;&gt; for Read&lt;'a, C&gt; {
+    fn from(source: Ref&lt;'a, Vec&lt;Option&lt;C&gt;&gt;&gt;) -&gt; Self {
+        Read { storage: source }
+    }
+}
+</code></pre>
+<p>And third, the <code>iterate</code> methods:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a, C&gt; Write&lt;'a, C&gt; {
+    pub fn iterate(&amp;mut self) -&gt; IterMut&lt;Option&lt;C&gt;&gt; {
+        self.storage.iter_mut()
+    }
+}
+
+impl&lt;'a, C&gt; Read&lt;'a, C&gt; {
+    pub fn iterate(&amp;self) -&gt; Iter&lt;Option&lt;C&gt;&gt; {
+        self.storage.iter()
+    }
+}
+</code></pre>
+<p>With this done, we still need to change our component registration a bit before we are done with the storage changes:</p>
+<pre><code class="language-rust noplaypen">storage.register_component_type::&lt;PositionComponent&gt;();
+storage.register_component_type::&lt;VelocityComponent&gt;();
+storage.register_component_type::&lt;FrictionComponent&gt;();
+storage.register_component_type::&lt;AccelerationComponent&gt;();
+</code></pre>
+<p>Whew! The component storage should be done now. However, all our systems are now broken as they are relying on <code>Read</code> and <code>Write</code> on unwrapping to <code>Vec&lt;C&gt;</code> and not <code>Vec&lt;Option&lt;C&gt;&gt;</code>.  Fixing this is going to be a bit more tasking.</p>
+<h3><a class="header" href="#matchcasesplosion" id="matchcasesplosion">Matchcasesplosion</a></h3>
+<p>For now, iterating entities in systems has been nice and simple as all entities have had all of the component types. Due to this, all systems have been able to just iterate over all entities. The iterators themselves had two distinct states:</p>
+<pre><code class="language-rust noplaypen">let item = iter.next();
+
+match item {
+    Some(_) =&gt; println!(&quot;The iterator has items&quot;),
+    None =&gt; println!(&quot;The iterator has been exhausted&quot;),
+}
+</code></pre>
+<p>However, now that we have optional components, the situation has got a bit more complex. The <code>iter.next()</code> now actually returns a <code>Option&lt;Option&lt;C&gt;&gt;</code> so matching that becomes slightly cumbersome:</p>
+<pre><code class="language-rust noplaypen">let item = iter.next();
+
+match item {
+    Some(Some(_)) =&gt; println!(&quot;The iterator has items!&quot;),
+    Some(None) =&gt; println!(&quot;The current entity does not have the component!&quot;),
+    None =&gt; println!(&quot;The iterator has been exhausted!&quot;),
+}
+</code></pre>
+<p>When we add in another components, it just gets worse:</p>
+<pre><code class="language-rust noplaypen">let a = iter_a.next();
+let b = iter_b.next();
+
+match (a, b) {
+    (Some(Some(a)), Some(Some(b))) =&gt; println!(&quot;Both iterator have items!&quot;),
+    (None, None) =&gt; println!(&quot;Both iterators have been exhausted!&quot;),
+    (None, _) =&gt; println!(&quot;The iterator A has been exhausted!&quot;),
+    (_, None) =&gt; println!(&quot;The iterator B has been exhausted!&quot;),
+    (Some(None), Some(None)) =&gt; println!(&quot;The current entity does not have either of the components!&quot;),
+    (Some(None), _) =&gt; println!(&quot;The current entity does not have the component A!&quot;),
+    (_, Some(None)) =&gt; println!(&quot;The current entity does not have the component B!&quot;),
+}
+</code></pre>
+<p>So, as this seems to be quickly exploding out of control, we need to identify some common patterns here. One such case is the simple case where all desired components are present. Let's start creating an enum for these:</p>
+<pre><code class="language-rust noplaypen">// Here `T` is the type of the tuple with all components from iterators
+enum IteratorTupleOption&lt;T&gt; {
+    /// All iterators in the tuple returned a `Some(Some(value))`
+    All(T),
+}
+</code></pre>
+<p>This handles the first case. Now we still need to handle the following cases:</p>
+<pre><code class="language-rust noplaypen">(None, None) =&gt; ..,             // 1.
+(None, _) =&gt; ..,                // 2.
+(_, None) =&gt; ..,                // 3.
+(Some(None), Some(None) =&gt; ..,  // 4.
+(Some(None), _) =&gt; ..,          // 5.
+(_, Some(None)) =&gt; ..,          // 6.
+</code></pre>
+<p>Cases 1. to 3. describe situations after which we know for sure that the <code>All</code> case is impossible to reach, as one or more iterators have been exhausted. This gives us another enum variant:</p>
+<pre><code class="language-rust noplaypen">enum IteratorTupleOption&lt;T&gt; {
+<span class="boring">    /// All iterators in the tuple returned a `Some(Some(value))`
+</span><span class="boring">    All(T),
+</span>    /// One or more iterators in the tuple returned a `None`
+    None,
+}
+</code></pre>
+<p>This leaves us with cases 4. to 6. which actually form a single group. They are all <em>&quot;partial&quot;</em> matches, where the entity in question did not have all required components. This can be handled with a third variant.</p>
+<p>Our enum for handling these cases is then</p>
+<pre><code class="language-rust noplaypen">enum IteratorTupleOption&lt;T&gt; {
+    /// All iterators in the tuple returned a `Some(Some(value))`
+    All(T),
+    /// One or more iterators in the tuple returned a `None`
+    None,
+    /// All iterators in the tuple returned a `Some(Option)`,
+    /// but one or more iterators produced a `Some(None)`.
+    Partial,
+}
+</code></pre>
+<h3><a class="header" href="#iterating-tuple-of-itermutoptiont-as-if-they-were-itermutt" id="iterating-tuple-of-itermutoptiont-as-if-they-were-itermutt">Iterating tuple of <code>Iter(Mut)&lt;Option&lt;T&gt;&gt;</code> as if they were <code>Iter(Mut)&lt;T&gt;</code></a></h3>
+<p>The next issue is that we want to avoid adding more complexity to our systems. The tuple iterator should handle the aforementioned partial cases behind-the-scenes so that the systems do not get any partial entities in the first place. This requires figuring out how our <code>Option&lt;T&gt;</code>-spewing iterators could nicely be made output <code>T</code> directly.</p>
+<p>In the end, the idea is again quite simple once you wrap your head around it. As we figured out, there are only three different cases: <em>All</em>, <em>None</em> and <em>Partial</em>. In case of <em>All</em>, we should output a tuple with the components. <em>None</em> means that we need to output, well, <em>None</em>. The last one, <em>Partial</em> is a bit trickier as we actually need to <em>skip the current element</em> and keep polling new ones until either All or None is reached.</p>
+<p>As Rust-like pseudocode, this could then be written as something like:</p>
+<pre><code class="language-rust noplaypen">fn next() -&gt; IteratorTupleOption&lt;ItemTuple&gt; {
+    loop {
+        let next_tuple = (iter_a.next(), iter_b.next(), ...);
+        match next_tuple {
+            (Some(Some(a)), Some(Some(b)), ...) =&gt; return All((a, b)),
+            (None, None, ...) =&gt; return None,
+            _ =&gt; Partial,
+        }
+    }
+}
+</code></pre>
+<p>Here, I took a shortcut to make writing this <em>(and macros later on)</em> easier. We might at some point be in a situation where our component vectors have different sizes, but for now, they all have equal lengths, giving us guarantee that <em>if any of the iterators produces <code>None</code>, all of them should produce <code>None</code></em> <em>(Cases 1. to 3.)</em>. Due to that, I'm going to handle these as a single case for now.</p>
+<p>Also, leaving the partial cases as the last one makes handling it dead-simple. We know that all other cases are already being handled by the other matcher arms, so we can use the wildcard pattern to match the partial cases <em>(as they are the only remaining ones)</em>.</p>
+<p>Now there's a single oddity about this pseudocode; the <code>Partial</code> is actually never returned as we want to simply skip to the next <code>loop</code> iteration in those cases. This is Ok for the pseudocode, but for our implementation, we are going to move the actual loop elsewhere.</p>
+<p>Now, let's take a look at our <code>ApplyVelocitySystem</code> and more precisely, its <code>tick</code> method:</p>
+<pre><code class="language-rust noplaypen">let pos_iter = positions.iterate();
+let vel_iter = velocities.iterate();
+
+for (pos, vel) in IterTuple::from((pos_iter, vel_iter)) {
+    pos.value += vel.value;
+}
+</code></pre>
+<p>Now, where should we start applying our modifications? We see that <code>pos_iter</code> and <code>vel_iter</code> are of type <code>Iter(Mut)&lt;Option&lt;C&gt;&gt;</code>, but there is not much we can do in case of single iterators as they know nothing about each others' state. Therefore, the only place we know the state of all iterators at once is the <code>IterTuple</code>.</p>
+<p>First change, <code>IteratorTuple</code> should return <code>IteratorTupleOption</code> instead of <code>Option</code></p>
+<pre><code class="language-rust noplaypen">pub trait IteratorTuple {
+    type ItemTuple;
+
+    fn next_all(&amp;mut self) -&gt; IteratorTupleOption&lt;Self::ItemTuple&gt;;
+}
+</code></pre>
+<p><em>Try not to worry about the gazillion errors due to our macro breaking from that change, we'll tackle that later on.</em></p>
+<p>Now, in the <code>impl&lt;T&gt; Iterator for IterTuple&lt;T&gt;</code> we need to convert the <code>IteratorTupleOption</code> returned by <code>next_all</code> into a <code>Option&lt;ItemTuple&gt;</code>. We are going to use parts of our pseudocode loop for this:</p>
+<pre><code class="language-rust noplaypen">impl&lt;T&gt; Iterator for IterTuple&lt;T&gt;
+    where T: IteratorTuple
+{
+    type Item = T::ItemTuple;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+        loop {
+            match self.iterators.next_all() {
+                IteratorTupleOption::All(values) =&gt; return Some(values),
+                IteratorTupleOption::None =&gt; return None,
+                IteratorTupleOption::Partial =&gt; ()
+            }
+        }
+    }
+}
+</code></pre>
+<p>This is just the loop from the pseudocode, but the complexity of constructing the tuple option has been abstrated to <code>IteratorTuple</code> <em>(which we still need to implement later on before this actually starts working)</em>.</p>
+<p>Digging bit deeper into this, we are using the forever-loop as the iterators should under no circumstances be infinite, so at some point we will hit the <code>(None, None, ..)</code> case, which produces <code>IteratorTupleOption::None</code> from the <code>next_all</code>, returning <code>None</code> from the loop. Another option is that we get an actual match and return the matching component tuple. In cases where there is a partial match, we simply output <em>an empty tuple</em> <em>(The strange <code>()</code> in the partial matcher arm)</em> from the match, but <strong>we do not use return in this case</strong>, thus we stay in the loop and effectively skip to the next entity.</p>
+<h3><a class="header" href="#implementing-the-iteratortuple" id="implementing-the-iteratortuple">Implementing the <code>IteratorTuple</code></a></h3>
+<p>The <code>IteratorTuple</code> implementation proved to be a tough one and I had to resort to some interesting trickery to get things done. One limitation I met was that the standard library does not seem to provide any <code>trait</code> that could be used to describe something that can be unwrapped into something else. That is, there is no such trait that we could add bound on <code>Iterator::Item</code> that it must be <code>Option&lt;C&gt;</code> which could then be matched against <code>Some(component)</code>.</p>
+<p>If that did not make any sense, here's some almost-valid code for 2-tuple implementation:</p>
+<pre><code class="language-rust noplaypen">impl&lt;A, B&gt; IteratorTuple for (A, B)
+    where A: Iterator,
+          B: Iterator
+{
+    type ItemTuple = (/* A::Item unwrapped */, /* B::Item unwrapped */);
+    // The problem    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    fn next_all(&amp;mut self) -&gt; IteratorTupleOption&lt;Self::ItemTuple&gt; {
+        let option_tuple = (self.0.next(), self.1.next());
+        match option_tuple {
+            (Some(Some(a)), Some(Some(b))) =&gt; IteratorTupleOption::All((a, b)),
+            (None, None) =&gt; IteratorTupleOption::None,
+            _ =&gt; IteratorTupleOption::Partial,
+        }
+    }
+}
+</code></pre>
+<p>Idea is to match next items from the iterators against the three known case groups and construct the <code>IteratorTupleOption</code> based on that. The big problem, however, is how we get the type system to understand what we are trying to do.</p>
+<p>As I mentioned, the <code>Option&lt;T&gt;</code> <em>(which is what the iterators return)</em> does not implement out-of-the-box any traits that we could use to get the <em>&quot;wrapped&quot; type</em> for constructing the item tuple type. Particularly tricky is getting the returned mutable/immutable references match the iterators.</p>
+<p>My workaround was to ditch some of the nested pattern matching and implement a custom trait on component <code>Option</code>s. Then, some syntatically horrifying trickery involving match-guards is needed to make things actually work.</p>
+<p>First, let's write the above non-compiling snippet again with <em>match guards</em>.</p>
+<pre><code class="language-rust noplaypen">impl&lt;A, B&gt; IteratorTuple for (A, B)
+    where A: Iterator,
+          B: Iterator
+{
+    type ItemTuple = (/* A::Item unwrapped */, /* B::Item unwrapped */);
+
+    fn next_all(&amp;mut self) -&gt; IteratorTupleOption&lt;Self::ItemTuple&gt; {
+        let option_tuple = (self.0.next(), self.1.next());
+        match option_tuple {
+            (Some(a), Some(b)) if a.is_some() &amp;&amp; b.is_some() =&gt; All((a.unwrap(), b.unwrap())),
+            (None, None) =&gt; None,
+            _ =&gt; Partial,
+        }
+    }
+}
+</code></pre>
+<p>We still do not know the types for the items, but here is an example of match guards in action. What they essentially do is just that they add an additional layer of filtering on our matcher pattern. That is, if we were to do that if-expression on the right hand side of the matcher arm <em>(inside the executed block)</em>, in case of the condition evaluating to <code>false</code>, <strong>we would not hit the other matcher arms</strong>. With guards, in case the condition is false, the pattern is not accepted and next arms are matched.</p>
+<p>That being said, the match expression is equivalent to the previous one where we just used patterns. The key difference, though, is that we are now using method calls and method calls are something we have much more access to from traits!</p>
+<p>Let's create a new trait, I'll explain the purpose of this thing as we go:</p>
+<pre><code class="language-rust noplaypen">pub trait OptionLike {
+    type Item;
+
+    fn unwrap(self) -&gt; Self::Item;
+
+    fn is_some(&amp;self) -&gt; bool;
+}
+</code></pre>
+<p>Anything implementing <code>OptionLike</code> is something that can be <em>&quot;unwrapped&quot;</em> into another type. Additionally, it provides <code>is_some</code> to check whether or not the wrapped value is present.</p>
+<p>This now actually allows us to define the <code>type ItemTuple</code>!</p>
+<pre><code class="language-rust noplaypen">impl&lt;A, B&gt; IteratorTuple for (A, B)
+    where A: Iterator,
+          B: Iterator,
+          A::Item: OptionLike,
+          B::Item: OptionLike,
+{
+    type ItemTuple = (&lt;A::Item as OptionLike&gt;::Item, &lt;B::Item as OptionLike&gt;::Item);
+
+    fn next_all(&amp;mut self) -&gt; IteratorTupleOption&lt;Self::ItemTuple&gt; {
+        let option_tuple = (self.0.next(), self.1.next());
+        match option_tuple {
+            (Some(a), Some(b)) if a.is_some() &amp;&amp; b.is_some() =&gt; IteratorTupleOption::All((a.unwrap(), b.unwrap())),
+            (None, None) =&gt; IteratorTupleOption::None,
+            _ =&gt; IteratorTupleOption::Partial,
+        }
+    }
+}
+</code></pre>
+<p>We impose additional bounds on the iterators in the <code>IteratorTuple</code>, the items must be <em>unwrappable</em>. Then, we use only a single layer of pattern matching, with guards for checking if the results are <code>Some(T)</code> or <code>None</code> <em>(the <code>has_value</code> calls in guards)</em>. Finally, we need to unwrap the <code>OptionLike</code>s by calling <code>x.unwrap()</code>.</p>
+<p>...yeah, a bit messy, but does the trick and contains no arcane black-magic trickery! Just plain ol' trait bounds and traits.</p>
+<p>Trying to run now results in bunch of errors from <code>Option&lt;T&gt;</code>s not implementing the <code>OptionLike</code>. Also, the macros are still broken.</p>
+<h3><a class="header" href="#implementing-optionlike" id="implementing-optionlike">Implementing <code>OptionLike</code></a></h3>
+<p>As we are not creating new functionality, this is quite straightforward. The only gotcha is the fact that iterators produce <em>references</em> to options, not concrete options themselves. This requires us to write a few additional implementations.</p>
+<p>There are total of three implementations. First one, a bit of extra for sake of completeness, the concrete <code>Option</code>:</p>
+<pre><code class="language-rust noplaypen">impl&lt;T&gt; OptionLike for Option&lt;T&gt; {
+    type Item = T;
+
+    fn unwrap(self) -&gt; Self::Item {
+        self.unwrap()
+    }
+
+    fn is_some(&amp;self) -&gt; bool {
+        self.is_some()
+    }
+}
+</code></pre>
+<p>Another one, for immutable references:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a, T&gt; OptionLike for &amp;'a Option&lt;T&gt; {
+    type Item = &amp;'a T;
+
+    fn unwrap(self) -&gt; Self::Item {
+        self.as_ref().unwrap()
+    }
+
+    fn is_some(&amp;self) -&gt; bool {
+        Option::&lt;T&gt;::is_some(self)
+    }
+}
+</code></pre>
+<p>And last, but not least, very similar one for mutable references:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a, T&gt; OptionLike for &amp;'a mut Option&lt;T&gt; {
+    type Item = &amp;'a mut T;
+
+    fn unwrap(self) -&gt; Self::Item {
+        self.as_mut().unwrap()
+    }
+
+    fn is_some(&amp;self) -&gt; bool {
+        Option::&lt;T&gt;::is_some(self)
+    }
+}
+</code></pre>
+<p>And that's it actually. This is one of the reasons I love traits; Not only can we add new traits to existing types, but we also can add new traits that describe existing behavior! Here we added in a new trait to overcome the limitation of the standard library not providing us with all required traits.</p>
+<h3><a class="header" href="#rewriting-macros" id="rewriting-macros">Rewriting macros</a></h3>
+<p>This is again just basically expanding our 2-tuple implementation with macro variadics.</p>
+<p>After <code>where</code>, we need to add anohter expansion for adding trait bounds for <code>OptionLike</code>. The full <code>impl</code>-block signature then is</p>
+<pre><code class="language-rust noplaypen">impl&lt;$( $type_name ),+&gt; IteratorTuple for ($( $type_name ),+)
+    where $( $type_name: Iterator, )+
+          $( $type_name::Item: OptionLike, )+
+{
+    // ...
+</code></pre>
+<p>Note that I've also moved the commas inside the repeat pattern to ensure that even the last one is postfixed with it. Providing the comma as separator <em>(the syntax is <code>$( pattern ) sep repeat</code>, where sep is separator and repeat is either <code>+</code> or <code>*</code>)</em> causes the last one to be ommited, which then causes there to be no comma between the <code>Iterator</code> bounds and the <code>OptionLike</code> bounds. This is not what we want, so just move the commas to be part of the pattern.</p>
+<p>With 3-tuples, this expands to something like</p>
+<pre><code class="language-rust noplaypen">impl&lt;A, B, C&gt; IteratorTuple for (A, B, C)
+    where A: Iterator, B: Iterator, C: Iterator,
+          A::Item: OptionLike, B::Item: OptionLike, C::Item: OptionLike,
+{
+    // ...
+</code></pre>
+<p>Then, we need to construct the <code>ItemTuple</code>. <code>T::Item</code> is no longer enough as the items are options. Therefore, we need to use fully qualified syntax.</p>
+<pre><code class="language-rust noplaypen">type ItemTuple = ($( &lt;$type_name::Item as OptionLike&gt;::Item ),+);
+</code></pre>
+<p>which expands to</p>
+<pre><code class="language-rust noplaypen">type ItemTuple = (&lt;A::Item as OptionLike&gt;::Item,
+                  &lt;B::Item as OptionLike&gt;::Item,
+                  &lt;C::Item as OptionLike&gt;::Item);
+</code></pre>
+<p>Then, the <code>next_all</code> method is quite messy as the first matcher arm requires three expansions on a single line. Ignore the <code>replace_expr!</code> macro for now, we'll get to that, eventually.</p>
+<pre><code class="language-rust noplaypen">fn next_all(&amp;mut self) -&gt; IteratorTupleOption&lt;Self::ItemTuple&gt; {
+    match ($( self.$i.next() ),+) {
+        // The All case
+        ($( Some($item_name) ),+)
+        if $( $item_name.is_some() )&amp;&amp;+
+        =&gt; IteratorTupleOption::All(($( $item_name.unwrap() ),+)),
+
+        // None cases
+        ($( replace_expr!( ($i) None ) ),+) =&gt; IteratorTupleOption::None,
+
+        // Partial cases
+        _ =&gt; IteratorTupleOption::Partial,
+    }
+}
+</code></pre>
+<p>The <code>All</code> case is split on three lines here. First line just expands the pattern to unwrap the first layer of <code>Option</code>s away. The second line matches the second layer of options, by expandign to the match guards. Note the use of <code>&amp;&amp;</code> as pattern expansion separator here. The third and last line just unwraps the <code>OptionLike</code>s and constructs the <code>IteratorTupleOption::All</code> from them.</p>
+<p>That is, the first matcher arm expands to</p>
+<pre><code class="language-rust noplaypen">(Some(a), Some(b), Some(c))
+if a.is_some() &amp;&amp; b.is_some() &amp;&amp; c.is_some()
+=&gt; IteratorTupleOption::All((a.unwrap(), b.unwrap(), c.unwrap())),
+</code></pre>
+<p>For implementing the second matcher arm, we need a bit of trickery. We want the pattern to repeat <code>n</code> times, or in this case as many times as there are parameters, but we do not care about parameter contents.</p>
+<p>We create a <code>replace_expr!</code>-macro for replacing any other expression with another expression, in this case, we want to substitute one of our parameters with <code>None</code>.</p>
+<p>The macro looks like this:</p>
+<pre><code class="language-rust noplaypen">/// Replaces a repetition sequence contents with some other expression.
+macro_rules! replace_expr {
+    ($_t:tt $sub:tt) =&gt; {$sub};
+}
+</code></pre>
+<p>Now, the matcher arm expands simply to</p>
+<pre><code class="language-rust noplaypen">(None, None, None) =&gt; IteratorTupleOption::None,
+</code></pre>
+<p>As a final touch, I moved most commas inside the repeat patterns, so that the macro works even for 1-tuples. <em>(1-tuple can be forced by adding a comma, as in <code>(x,)</code>)</em></p>
+<p>The final, full thing is then</p>
+<pre><code class="language-rust noplaypen">macro_rules! replace_expr {
+    ($_t:tt $sub:tt) =&gt; {$sub};
+}
+
+macro_rules! implement_iterator_tuple {
+    ($( ($i:tt, $item_name:ident, $type_name:ident) ),+) =&gt; {
+        impl&lt;$( $type_name, )+&gt; IteratorTuple for ($( $type_name, )+)
+            where $( $type_name: Iterator, )+
+                  $( $type_name::Item: OptionLike, )+
+        {
+            type ItemTuple = ($( &lt;$type_name::Item as OptionLike&gt;::Item, )+);
+
+            fn next_all(&amp;mut self) -&gt; IteratorTupleOption&lt;Self::ItemTuple&gt; {
+                match ($( self.$i.next(), )+) {
+                    ($( Some($item_name), )+) if $( $item_name.is_some() )&amp;&amp;+
+                    =&gt; IteratorTupleOption::All(($( $item_name.unwrap(), )+)),
+                    
+                    ($( replace_expr!( ($i) None ), )+) =&gt; IteratorTupleOption::None,
+
+                    _ =&gt; IteratorTupleOption::Partial,
+                }
+            }
+        }
+    };
+}
+</code></pre>
+<p>Now, the <code>PrintPositionsSystem</code> is broken, but as we added support for 1-tuples, it can be unified to use the <code>TupleIter</code> like the other systems:</p>
+<pre><code class="language-rust noplaypen">impl&lt;'a&gt; System&lt;'a&gt; for PrintPositionsSystem {
+    type InputData = Read&lt;'a, PositionComponent&gt;;
+
+    fn tick(&amp;self, positions: Self::InputData) {
+        let pos_iter =  positions.iterate();
+        for (pos,) in IterTuple::from((pos_iter,)) {
+            println!(&quot;Position: {}&quot;, pos)
+        }
+    }
+}
+</code></pre>
+<p>And finally, we are done. Everything should compile and run now just fine!</p>
+<h2><a class="header" href="#other-notes" id="other-notes">Other notes</a></h2>
+<p>Happy news! The associated constants feature has been stabilized in <em>1.43.0</em>, so we can remove its feature attribute from the <code>main.rs</code> <em>(Still need to use nightly though. As of writing 1.42.0 is the newest version on the stable toolchain)</em>.</p>
+<p>I also removed the <code>entity_index</code> counter from the <code>PrintStateSystem</code> by using <code>Iterator::enumerate</code>, but that was quite trivial change. The entity IDs there are incorrect, however as they do not accommodate for skipped entities. Getting access to entities and their IDs from systems is something I need to address very soon.</p>
+<h2><a class="header" href="#what-next" id="what-next">What next?</a></h2>
+<p>Whew! That was quite a lot of changes. Things are shaping up quite nicely, and I'm surprised that I actually got the optional components working. I'm particularly fond of the <code>OptionLike</code> workaround we implemented as it really highlights the awesomeness of traits.</p>
+<p>Next up is getting entity IDs available to systems and unifying the system tick so that dispatcher could be given the same treatment as with component storage. That is, I would like to be able to register arbitrary system types to the dispatcher.</p>
+<p>I have some ideas on how latter could be implemented. The idea is to <em>kindly ask the systems what resources they want</em> instead of dispatcher &quot;deciding&quot; the resources for them.</p>
+<p>The full source code can be found in branch <code>part-8</code> (<a href="https://github.com/Kailari/kokonaisuus/tree/part-8">link</a>)</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+                            <a rel="prev" href="chapter_6.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+                    <a href="chapter_6.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+        <!-- Google Analytics Tag -->
+        <script type="text/javascript">
+            var localAddrs = ["localhost", "127.0.0.1", ""];
+
+            // make sure we don't activate google analytics if the developer is
+            // inspecting the book locally...
+            if (localAddrs.indexOf(document.location.hostname) === -1) {
+                (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+                (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+                m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+                })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+                ga('create', 'UA-159929183-1', 'auto');
+                ga('send', 'pageview');
+            }
+        </script>
+        
+
+        
+        
+        
+        <script type="text/javascript">
+            window.playpen_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        <script type="text/javascript" src="third-party/ferris.js"></script>
+        
+
+        
+
+    </body>
+</html>

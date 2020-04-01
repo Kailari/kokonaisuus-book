@@ -86,7 +86,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div id="sidebar-scrollbox" class="sidebar-scrollbox">
-                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li><li class="expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> macro_rules!</a></li><li class="expanded "><a href="chapter_5.html"><strong aria-hidden="true">5.</strong> The lifetime of 'a system</a></li><li class="expanded "><a href="chapter_6.html" class="active"><strong aria-hidden="true">6.</strong> Component TypeId</a></li></ol>
+                <ol class="chapter"><li class="expanded affix "><a href="background.html">Background</a></li><li class="expanded affix "><a href="chapter_0.html">The Bare-bones</a></li><li class="expanded "><a href="chapter_1.html"><strong aria-hidden="true">1.</strong> (Almost) walking skeleton</a></li><li class="expanded "><a href="chapter_2.html"><strong aria-hidden="true">2.</strong> Spring cleaning</a></li><li class="expanded "><a href="chapter_3.html"><strong aria-hidden="true">3.</strong> Iteratorception</a></li><li class="expanded "><a href="chapter_4.html"><strong aria-hidden="true">4.</strong> macro_rules!</a></li><li class="expanded "><a href="chapter_5.html"><strong aria-hidden="true">5.</strong> The lifetime of 'a system</a></li><li class="expanded "><a href="chapter_6.html" class="active"><strong aria-hidden="true">6.</strong> Component TypeId</a></li><li class="expanded "><a href="chapter_7.html"><strong aria-hidden="true">7.</strong> Arbitrary component types</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -499,11 +499,11 @@ let positions_mut = storage.fetch_mut::&lt;PositionComponent&gt;().as_mut();
 // The compiler does not complain, but we cannot bypass borrowing rules,
 // even when we are using `RefCells`. This panics at runtime.
 </code></pre>
-<p>The code panics on the second line as we are trying to fetch mutably while immutable borrow is still alive. Fetching multiple times mutably is valid, though:</p>
+<p>The code panics on the second line as we are trying to fetch mutably while immutable borrow is still alive. Fetching multiple times immutably is perfectly valid, though <em>(It's called aliasing, I think)</em>:</p>
 <pre><code class="language-rust noplaypen">let positions_ref_a = storage.fetch_ref::&lt;PositionComponent&gt;().as_ref();
 let positions_ref_b = storage.fetch_ref::&lt;PositionComponent&gt;().as_ref();
 </code></pre>
-<p>The first example causes issues if we were to move the storage accesses to temporary variables:</p>
+<p>There are also some additional issues if we were going to try and move the storage accesses to temporary variables:</p>
 <pre><code class="language-rust panics noplaypen">let mut velocities = storage.fetch_mut::&lt;VelocityComponent&gt;();
 let frictions = storage.fetch_ref::&lt;FrictionComponent&gt;();
 self.apply_friction.tick((
@@ -538,7 +538,7 @@ self.apply_velocity.tick((
 </code></pre>
 <p>This is valid code and should compile just fine. We use a relatively common trick, which we can use when writing sequences like these where we do not want to extract things to their own methods but would like previous values to be dropped before starting work on next ones. We simply define a new scope to limit the lifetime of the storage references. Now, the second definition of <code>velocities</code> is not actually shadowing the original anymore, as the original has already gone out of scope and thus has been dropped!</p>
 <p>So, the takeaway here is that one must be careful with <code>storage.fetch_XXX</code> methods, as they can easily cause panics at runtime. I have not figured out how this could be done safely, or how I could get the compiler to complain about trying to simultaneously fetch the same component storage two times.</p>
-<p>Then onto the next topic; the <code>fetch_component_storage</code>. The trickery we do is luckily limited to the scope of a single method, thus its not <em>that</em> huge of an issue. However, I strongly dislike the approach we took here. We momentarily lose type-safety almost completely here. Yes, the application immediately crashes in case we manage to accidentally return wrong type of vector, but there is no compile-time guarantee that we have written code that is actually safe. I <em>might</em> invest some time in the future to create some <em>(at least a bit)</em> safer wrapper for doing this conversion, but that must wait for after we have finished with generalizing the storage.</p>
+<p>Then onto the next topic; the <code>fetch_component_storage</code>. The trickery we do is luckily limited to the scope of a single method, thus its not <em>that</em> huge of an issue. However, I strongly dislike the approach we took here. We momentarily lose type-safety almost completely. Yes, the application immediately crashes in case we manage to accidentally return wrong type of vector, but there is no compile-time guarantee that we have written code that is actually safe. I <em>might</em> invest some time in the future to create some <em>(at least a bit)</em> safer wrapper for doing this conversion, but that must wait for after we have finished with generalizing the storage.</p>
 <h2><a class="header" href="#what-next" id="what-next">What next?</a></h2>
 <p>Ok! We got a huge milestone out of the way here; we have API we can use to fetch arbitrary component types from our component storage. Yes, the storage currently only supports four different component types, but we are not far from being able to support any number of components. The dispatcher is getting messy, but we are not going to touch on that just yet.</p>
 <p>For the next part, we are going to focus on packing the individual component storage vectors to some collection so that we can truly support arbitrary component types. This requires some registration procedure for component types and a few changes to way our <code>fetch_component_storage</code> works, but should be quite simple change now that we have the framework laid down.</p>
@@ -555,6 +555,10 @@ self.apply_velocity.tick((
                         
 
                         
+                            <a rel="next" href="chapter_7.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
 
                         <div style="clear: both"></div>
                     </nav>
@@ -568,6 +572,10 @@ self.apply_velocity.tick((
                     </a>
                 
 
+                
+                    <a href="chapter_7.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
                 
             </nav>
 
