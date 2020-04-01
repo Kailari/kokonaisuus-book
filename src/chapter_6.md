@@ -410,13 +410,13 @@ let positions_mut = storage.fetch_mut::<PositionComponent>().as_mut();
 // The compiler does not complain, but we cannot bypass borrowing rules,
 // even when we are using `RefCells`. This panics at runtime.
 ```
-The code panics on the second line as we are trying to fetch mutably while immutable borrow is still alive. Fetching multiple times mutably is valid, though:
+The code panics on the second line as we are trying to fetch mutably while immutable borrow is still alive. Fetching multiple times immutably is perfectly valid, though *(It's called aliasing, I think)*:
 ```rust,noplaypen
 let positions_ref_a = storage.fetch_ref::<PositionComponent>().as_ref();
 let positions_ref_b = storage.fetch_ref::<PositionComponent>().as_ref();
 ```
 
-The first example causes issues if we were to move the storage accesses to temporary variables:
+There are also some additional issues if we were going to try and move the storage accesses to temporary variables:
 ```rust,panics,noplaypen
 let mut velocities = storage.fetch_mut::<VelocityComponent>();
 let frictions = storage.fetch_ref::<FrictionComponent>();
@@ -456,7 +456,7 @@ This is valid code and should compile just fine. We use a relatively common tric
 
 So, the takeaway here is that one must be careful with `storage.fetch_XXX` methods, as they can easily cause panics at runtime. I have not figured out how this could be done safely, or how I could get the compiler to complain about trying to simultaneously fetch the same component storage two times.
 
-Then onto the next topic; the `fetch_component_storage`. The trickery we do is luckily limited to the scope of a single method, thus its not *that* huge of an issue. However, I strongly dislike the approach we took here. We momentarily lose type-safety almost completely here. Yes, the application immediately crashes in case we manage to accidentally return wrong type of vector, but there is no compile-time guarantee that we have written code that is actually safe. I *might* invest some time in the future to create some *(at least a bit)* safer wrapper for doing this conversion, but that must wait for after we have finished with generalizing the storage.
+Then onto the next topic; the `fetch_component_storage`. The trickery we do is luckily limited to the scope of a single method, thus its not *that* huge of an issue. However, I strongly dislike the approach we took here. We momentarily lose type-safety almost completely. Yes, the application immediately crashes in case we manage to accidentally return wrong type of vector, but there is no compile-time guarantee that we have written code that is actually safe. I *might* invest some time in the future to create some *(at least a bit)* safer wrapper for doing this conversion, but that must wait for after we have finished with generalizing the storage.
 
 
 What next?
